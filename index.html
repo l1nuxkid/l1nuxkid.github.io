@@ -8,68 +8,119 @@
   <style>
     body {
       margin: 0;
+      font-family: Arial, sans-serif;
       background: #0d1117;
       color: #c9d1d9;
-      font-family: Arial, sans-serif;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px 40px;
+      background: #161b22;
+      position: sticky;
+      top: 0;
+    }
+
+    .logo {
+      color: #58a6ff;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .nav-links a {
+      color: #c9d1d9;
+      margin-left: 20px;
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: #58a6ff;
+    }
+
+    /* HERO */
+    .hero {
+      height: 80vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-    }
-
-    .container {
       text-align: center;
-      max-width: 700px;
+      flex-direction: column;
       padding: 20px;
     }
 
-    h1 {
-      font-size: 64px;
-      margin-bottom: 10px;
+    .hero h1 {
+      font-size: 60px;
       color: #58a6ff;
+      margin: 0;
     }
 
-    h2 {
+    .hero p {
+      max-width: 600px;
+      line-height: 1.6;
+      margin-top: 20px;
       color: #8b949e;
-      font-weight: normal;
-      margin-bottom: 30px;
     }
 
-    p {
-      line-height: 1.7;
-      margin-bottom: 40px;
+    .buttons {
+      margin-top: 30px;
     }
 
-    a {
+    .btn {
+      padding: 10px 20px;
+      margin: 10px;
+      border: 1px solid #58a6ff;
       color: #58a6ff;
       text-decoration: none;
-      margin: 0 15px;
-      font-size: 18px;
+      border-radius: 6px;
     }
 
-    a:hover {
-      color: #79c0ff;
+    .btn:hover {
+      background: #58a6ff;
+      color: black;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #8b949e;
+      border-top: 1px solid #30363d;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>l1nuxkid</h1>
 
-    <h2>OSCP Certified | Offensive Security Enthusiast</h2>
-
-    <p>
-      Focused on web application security, Active Directory,
-      privilege escalation, and offensive security tooling.
-    </p>
-
-    <div>
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="logo">l1nuxkid</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="resume.html">Resume</a>
+      <a href="notes.html">Notes</a>
       <a href="https://github.com/l1nuxkid">GitHub</a>
-      <a href="https://notes.l1nuxkid.dev">Notes</a>
-      <a href="#">Resume</a>
-      <a href="#">LinkedIn</a>
     </div>
   </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>l1nuxkid</h1>
+    <p>
+      OSCP Certified | Offensive Security Enthusiast  
+      Focused on Web Security, Active Directory, Privilege Escalation & Red Teaming
+    </p>
+
+    <div class="buttons">
+      <a class="btn" href="resume.html">View Resume</a>
+      <a class="btn" href="notes.html">Security Notes</a>
+      <a class="btn" href="https://notes.l1nuxkid.dev">GitBook</a>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 l1nuxkid | Cybersecurity Portfolio
+  </footer>
+
 </body>
 </html>
