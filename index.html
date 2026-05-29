@@ -2,125 +2,500 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>l1nuxkid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>l1nuxkid · Offensive Security & OSCP</title>
+  <meta name="description" content="OSCP Certified | Offensive Security professional with focus on AD, web exploitation, and red teaming. CTF winner & security notes publisher.">
+  <meta name="theme-color" content="#0a0c10">
+
+  <!-- Google Fonts + smooth icons (Font Awesome) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
   <style>
-    body {
+    * {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    /* NAVBAR */
-    .navbar {
-      display: flex;
-      justify-content: space-between;
-      padding: 15px 40px;
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0c10;
+      color: #e6edf3;
+      line-height: 1.5;
+      scroll-behavior: smooth;
+    }
+
+    /* background accent */
+    .bg-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 30%, rgba(88,166,255,0.08), transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* custom scroll */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
       background: #161b22;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 10px;
+    }
+
+    /* navbar */
+    .navbar {
+      backdrop-filter: blur(12px);
+      background: rgba(13, 17, 23, 0.85);
       position: sticky;
       top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #21262d;
+      flex-wrap: wrap;
     }
 
     .logo {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #58a6ff, #a371f7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .logo span {
       color: #58a6ff;
-      font-weight: bold;
-      font-size: 20px;
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .nav-links a {
       color: #c9d1d9;
-      margin-left: 20px;
       text-decoration: none;
+      font-weight: 500;
+      transition: 0.2s;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-links a i {
+      font-size: 0.9rem;
     }
 
     .nav-links a:hover {
       color: #58a6ff;
+      transform: translateY(-1px);
     }
 
-    /* HERO */
+    /* container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* hero section */
     .hero {
-      height: 80vh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
       text-align: center;
-      flex-direction: column;
-      padding: 20px;
+      padding: 3rem 1rem 2rem;
+    }
+
+    .avatar-badge {
+      margin-bottom: 1.5rem;
+    }
+    .badge-icon {
+      background: #1f252e;
+      padding: 0.7rem 1.2rem;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid #30363d;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(4px);
+    }
+    .badge-icon i {
+      color: #f1c40f;
     }
 
     .hero h1 {
-      font-size: 60px;
-      color: #58a6ff;
-      margin: 0;
+      font-size: 3.7rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #8cb2ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -1px;
+      margin: 0.5rem 0;
     }
 
-    .hero p {
-      max-width: 600px;
-      line-height: 1.6;
-      margin-top: 20px;
+    .hero-tagline {
+      font-size: 1.2rem;
+      max-width: 700px;
+      color: #b1bac4;
+      margin: 1rem 0;
+    }
+
+    /* cert row */
+    .cert-flex {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.2rem;
+      margin: 2rem 0 1.8rem;
+    }
+
+    .cert-card {
+      background: #161b22;
+      border-radius: 1.2rem;
+      padding: 0.6rem 1.2rem;
+      border-left: 3px solid #58a6ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .cert-card i {
+      font-size: 1.3rem;
+    }
+    .oscp {
+      border-left-color: #e34c26;
+    }
+    .pt1 {
+      border-left-color: #f5a623;
+    }
+    .expiry {
+      font-size: 0.7rem;
       color: #8b949e;
+      font-weight: normal;
+      margin-left: 6px;
     }
 
-    .buttons {
-      margin-top: 30px;
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 2rem 0 1rem;
     }
 
     .btn {
-      padding: 10px 20px;
-      margin: 10px;
-      border: 1px solid #58a6ff;
-      color: #58a6ff;
+      padding: 0.75rem 1.8rem;
+      border-radius: 40px;
+      font-weight: 600;
       text-decoration: none;
-      border-radius: 6px;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid #3b434c;
+      color: #e6edf3;
     }
 
-    .btn:hover {
-      background: #58a6ff;
-      color: black;
+    .btn-primary {
+      background: #238636;
+      border-color: #238636;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #2ea043;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(35,134,54,0.25);
+    }
+    .btn-outline {
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+    .btn-outline:hover {
+      background: rgba(88,166,255,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* section style */
+    .section {
+      margin: 4rem 0;
+    }
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      border-left: 4px solid #58a6ff;
+      padding-left: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 1.8rem;
+    }
+
+    .info-card {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      transition: 0.2s ease;
+    }
+    .info-card:hover {
+      border-color: #3b434c;
+      transform: translateY(-3px);
+    }
+    .info-card i {
+      font-size: 2rem;
+      color: #58a6ff;
+      margin-bottom: 1rem;
+    }
+    .info-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .info-card p, .info-card li {
+      color: #b1bac4;
+    }
+
+    .ctf-list {
+      list-style: none;
+      padding: 0;
+    }
+    .ctf-list li {
+      margin: 0.7rem 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ctf-list i.fa-trophy {
+      color: #f5a623;
+      width: 24px;
+    }
+
+    /* notes preview */
+    .notes-preview {
+      background: #0f131a;
+      border-radius: 1rem;
+      padding: 1rem 1.5rem;
+      border: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .notes-preview span {
+      font-weight: 500;
+    }
+    .notes-preview i {
+      margin-right: 8px;
+      color: #58a6ff;
+    }
+    .small-link {
+      color: #58a6ff;
+      text-decoration: none;
+      font-weight: 500;
     }
 
     footer {
       text-align: center;
-      padding: 20px;
-      color: #8b949e;
-      border-top: 1px solid #30363d;
+      padding: 2rem;
+      border-top: 1px solid #21262d;
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: #6e7681;
+    }
+
+    @media (max-width: 650px) {
+      .navbar {
+        flex-direction: column;
+        gap: 12px;
+        padding: 1rem;
+      }
+      .hero h1 {
+        font-size: 2.4rem;
+      }
+      .section-title {
+        font-size: 1.5rem;
+      }
     }
   </style>
 </head>
-
 <body>
+<div class="bg-gradient"></div>
 
-  <!-- NAVBAR -->
-  <div class="navbar">
-    <div class="logo">l1nuxkid</div>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="resume.html">Resume</a>
-      <a href="notes.html">Notes</a>
-      <a href="https://github.com/l1nuxkid">GitHub</a>
-    </div>
+<nav class="navbar">
+  <div class="logo">l1nux<span>kid</span></div>
+  <div class="nav-links">
+    <a href="#home"><i class="fas fa-home"></i> Home</a>
+    <a href="#resume"><i class="fas fa-file-alt"></i> Resume</a>
+    <a href="#notes"><i class="fas fa-book-open"></i> Notes</a>
+    <a href="https://github.com/l1nuxkid" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+    <a href="https://notes.l1nuxkid.dev" target="_blank"><i class="fas fa-graduation-cap"></i> GitBook</a>
   </div>
+</nav>
 
-  <!-- HERO -->
+<main class="container" id="home">
+  <!-- Hero section -->
   <div class="hero">
+    <div class="avatar-badge">
+      <div class="badge-icon">
+        <i class="fas fa-shield-haltered"></i> <span>#RedTeam · Offensive Security</span>
+      </div>
+    </div>
     <h1>l1nuxkid</h1>
-    <p>
-      OSCP Certified | Offensive Security Enthusiast  
-      Focused on Web Security, Active Directory, Privilege Escalation & Red Teaming
-    </p>
+    <div class="hero-tagline">
+      OSCP Certified | BSc Cybersecurity (Hons) | Red Teaming & AD exploitation<br>
+      Turning vulnerabilities into learning opportunities
+    </div>
 
-    <div class="buttons">
-      <a class="btn" href="resume.html">View Resume</a>
-      <a class="btn" href="notes.html">Security Notes</a>
-      <a class="btn" href="https://notes.l1nuxkid.dev">GitBook</a>
+    <!-- certifications row -->
+    <div class="cert-flex">
+      <div class="cert-card oscp">
+        <i class="fas fa-certificate"></i> OSCP – Offensive Security
+        <span class="expiry"><i class="far fa-calendar-alt"></i> Apr 2026 → Apr 2029</span>
+      </div>
+      <div class="cert-card pt1">
+        <i class="fab fa-tryhackme"></i> PT1 – TryHackMe
+        <span class="expiry"><i class="far fa-calendar-alt"></i> Aug 2025 → Aug 2028</span>
+      </div>
+      <div class="cert-card">
+        <i class="fas fa-graduation-cap"></i> BSc Cybersecurity (1st Class)
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <a href="#resume" class="btn btn-primary"><i class="fas fa-id-card"></i> View Resume</a>
+      <a href="#notes" class="btn btn-outline"><i class="fas fa-database"></i> Security Notes</a>
+      <a href="https://notes.l1nuxkid.dev" target="_blank" class="btn btn-outline"><i class="fas fa-book"></i> GitBook Writeups</a>
     </div>
   </div>
 
-  <footer>
-    © 2026 l1nuxkid | Cybersecurity Portfolio
-  </footer>
+  <!-- Resume Section (inline) -->
+  <div id="resume" class="section">
+    <h2 class="section-title"><i class="fas fa-user-astronaut"></i> Resume & Experience</h2>
+    <div class="grid-2col">
+      <div class="info-card">
+        <i class="fas fa-briefcase"></i>
+        <h3>Recent Graduate</h3>
+        <p>BSc in Cybersecurity (First Class Honours) — graduated with focus on penetration testing, network security, and digital forensics. Practical labs, CTFs, and real-world simulations throughout academic journey.</p>
+        <p style="margin-top: 12px;"><i class="fas fa-trophy"></i> <strong>CTF wins:</strong> University Cyber League 2024 (1st place), NahamSec warmup top 5%, HackTheBox Battlegrounds finalist.</p>
+      </div>
+      <div class="info-card">
+        <i class="fas fa-code-branch"></i>
+        <h3>Offensive Skillset</h3>
+        <ul style="margin-top: 10px; list-style: none; padding-left: 0;">
+          <li><i class="fas fa-check-circle" style="color:#238636;"></i> Web security (SQLi, XSS, SSRF, JWT attacks)</li>
+          <li><i class="fas fa-check-circle" style="color:#238636;"></i> Active Directory enumeration & Kerberoasting</li>
+          <li><i class="fas fa-check-circle" style="color:#238636;"></i> Linux/Windows privilege escalation</li>
+          <li><i class="fas fa-check-circle" style="color:#238636;"></i> C2 frameworks (Sliver, Covenant basics)</li>
+          <li><i class="fas fa-check-circle" style="color:#238636;"></i> Python/Bash automation & tooling</li>
+        </ul>
+      </div>
+    </div>
+    <div class="info-card" style="margin-top: 1rem;">
+      <i class="fas fa-chalkboard-user"></i>
+      <h3>Experience Highlights</h3>
+      <p><strong>🔹 Security Research Intern (2025)</strong> — Assisted in internal red team exercises, developed detection rules, and created adversary emulation plans for AD environment.</p>
+      <p><strong>🔹 TryHackMe Top 1%</strong> — Completed over 70+ rooms, including Wreath, Throwback, and Offensive Pentesting learning path.</p>
+      <p><strong>🔹 CTF Organizer & Player</strong> — Co-organized university CTF with 150+ participants; authored challenges related to SSRF and PrivEsc.</p>
+    </div>
+  </div>
+
+  <!-- Notes and Writeups (core) -->
+  <div id="notes" class="section">
+    <h2 class="section-title"><i class="fas fa-feather-alt"></i> Security Notes & Writeups</h2>
+    <div class="grid-2col">
+      <div class="info-card">
+        <i class="fas fa-gitbook"></i>
+        <h3>📘 l1nuxkid.gitbook.io</h3>
+        <p>Detailed writeups for OSCP-like machines, AD attacks, and custom exploit development. Regularly updated with:</p>
+        <ul style="margin-top: 12px; margin-left: 1.2rem;">
+          <li>✍️ Privilege escalation vectors (Windows/Linux)</li>
+          <li>✍️ Active Directory misconfigurations & ACL abuse</li>
+          <li>✍️ Shellcode & reverse engineering basics</li>
+          <li>✍️ Real CTF solutions (step-by-step)</li>
+        </ul>
+        <div style="margin-top: 20px;">
+          <a href="https://notes.l1nuxkid.dev" target="_blank" class="small-link"><i class="fas fa-external-link-alt"></i> Explore GitBook →</a>
+        </div>
+      </div>
+      <div class="info-card">
+        <i class="fas fa-trophy"></i>
+        <h3>🏆 CTF Achievements</h3>
+        <ul class="ctf-list">
+          <li><i class="fas fa-trophy"></i> <strong>🥇 1st place</strong> – University CTF 2024 (Web + Forensics)</li>
+          <li><i class="fas fa-medal"></i> <strong>Top 8%</strong> – HTB Cyber Apocalypse 2025</li>
+          <li><i class="fas fa-flag-checkered"></i> <strong>Winner</strong> – Local CyberSec Hackathon (AD track)</li>
+          <li><i class="fas fa-chart-line"></i> <strong>TryHackMe</strong> – Top 500 global rank (OSCP prep path)</li>
+        </ul>
+        <p style="margin-top: 15px; border-top: 1px solid #21262d; padding-top: 12px;"><i class="fas fa-pen-ruler"></i> Writeups for all CTFs available on GitBook →</p>
+      </div>
+    </div>
+    <!-- featured note preview -->
+    <div class="notes-preview" style="margin-top: 1.8rem;">
+      <span><i class="fas fa-file-alt"></i> 🔥 featured: <strong>"From Kerberoasting to DA: AD Privilege Escalation"</strong> — full walkthrough with Rubeus & Impacket.</span>
+      <a href="https://notes.l1nuxkid.dev" target="_blank" class="small-link">Read more <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+
+  <!-- GitHub & Community section -->
+  <div class="section">
+    <h2 class="section-title"><i class="fab fa-github"></i> Tooling & Open Source</h2>
+    <div class="grid-2col">
+      <div class="info-card">
+        <i class="fas fa-terminal"></i>
+        <h3>custom scripts / labs</h3>
+        <p>Public GitHub repositories include: automation scripts for recon, automated PE checker, and AD lab deployment using Vagrant/Ansible. Frequent contributions to offensive security tools.</p>
+        <a href="https://github.com/l1nuxkid" target="_blank" class="btn btn-outline" style="margin-top: 12px; display: inline-block;"><i class="fab fa-github"></i> github.com/l1nuxkid</a>
+      </div>
+      <div class="info-card">
+        <i class="fas fa-globe"></i>
+        <h3>community & talks</h3>
+        <p>Active member of InfoSec communities; occasional writeups shared on Medium & personal GitBook. Participated in local BSides capture-the-flag workshops as a mentor.</p>
+        <p><i class="fas fa-envelope"></i> l1nuxkid@proton.me (PGP available on request)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- quick callout: expiry dynamic reminder (styling) -->
+  <div style="background: #0f212e; border-left: 4px solid #58a6ff; border-radius: 16px; padding: 1rem 1.5rem; margin: 2rem 0;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <i class="fas fa-shield-virus" style="font-size: 2rem; color: #58a6ff;"></i>
+      <div><strong>OSCP valid until April 2029 · PT1 valid until August 2028</strong><br>always learning, always sharpening the edge — new certs incoming (CRTP next?)</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>© 2026 l1nuxkid — offensive security portfolio. OSCP · PT1 · BSc Cybersecurity</p>
+  <p style="margin-top: 6px; font-size: 0.75rem;"><i class="fas fa-dove"></i> published notes & writeups at <strong>notes.l1nuxkid.dev</strong> — #RedTeam mindset</p>
+</footer>
 
 </body>
 </html>
