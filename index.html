@@ -3,1121 +3,979 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>l1nuxkid — Harsh Vala</title>
+<title>Harsh Vala · l1nuxkid · Offensive Security</title>
+<meta name="description" content="OSCP+ certified offensive security professional. Penetration testing, Active Directory, web application security.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a08;
-    overflow: hidden;
-    font-family: monospace;
-    cursor: default;
-    user-select: none;
-  }
-  #canvas-container {
-    width: 100vw;
-    height: 100vh;
-    position: fixed;
-    top: 0; left: 0;
-  }
-  canvas { display: block; }
+/* ══════════════════════════════════════════
+   RESET & ROOT
+══════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;
+  --s1:#111113;
+  --s2:#18181b;
+  --border:#1f1f24;
+  --border2:#2a2a32;
+  --red:#e8324a;
+  --red-dim:rgba(232,50,74,0.08);
+  --red-glow:rgba(232,50,74,0.15);
+  --text:#f0f0f2;
+  --t2:#8888a0;
+  --t3:#44445a;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--sans);font-size:15px;line-height:1.6;
+  overflow-x:hidden;
+}
 
-  /* BOOT SCREEN */
-  #boot {
-    position: fixed; inset: 0;
-    background: #000;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 9999;
-    font-family: 'Courier New', monospace;
-    color: #33ff33;
-    font-size: 14px;
-    padding: 40px;
-  }
-  #boot-text { max-width: 600px; width: 100%; }
-  #boot-text div { margin: 2px 0; opacity: 0; transition: opacity 0.1s; }
-  #boot-text div.show { opacity: 1; }
-  #boot-cursor {
-    display: inline-block; width: 8px; height: 14px;
-    background: #33ff33; animation: blink 0.7s infinite;
-    vertical-align: middle; margin-left: 2px;
-  }
-  @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+/* ── GRAIN ── */
+.grain{
+  position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.55;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  background-repeat:repeat;
+}
 
-  /* OVERLAY TERMINAL UI (on top of 3D scene) */
-  #ui {
-    position: fixed; inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    display: none;
-  }
-  #ui.active { display: block; }
+/* ══════════════════════════════════════════
+   NAV
+══════════════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:58px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(1.2rem,5vw,5rem);
+  background:rgba(10,10,11,0.82);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:var(--mono);font-size:.82rem;font-weight:500;
+  color:var(--text);text-decoration:none;letter-spacing:-.01em;
+}
+.nav-logo b{color:var(--red)}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{
+  font-size:.78rem;color:var(--t2);text-decoration:none;
+  transition:color .15s;letter-spacing:.01em;
+}
+.nav-links a:hover{color:var(--text)}
+.nav-pill{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.07em;color:var(--green);
+  border:1px solid rgba(34,197,94,.22);background:rgba(34,197,94,.06);
+  padding:4px 12px;border-radius:100px;
+}
+.nav-pill-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* CRT vignette */
-  #vignette {
-    position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.75) 100%);
-    pointer-events: none; z-index: 99;
-    display: none;
-  }
-  #vignette.active { display: block; }
+/* ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 clamp(1.2rem,5vw,5rem) clamp(3rem,6vw,5rem);
+  position:relative;overflow:hidden;
+}
 
-  /* Scanlines */
-  #scanlines {
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.12) 0px,
-      rgba(0,0,0,0.12) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    pointer-events: none; z-index: 98;
-    display: none;
-  }
-  #scanlines.active { display: block; }
+/* Radial glow background */
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 55% at 65% 40%, rgba(232,50,74,.09) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 20% 70%, rgba(100,50,200,.05) 0%, transparent 60%);
+}
+/* Grid lines */
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 90% 80% at 50% 50%, black 20%, transparent 100%);
+}
 
-  /* FLOATING TERMINAL WINDOW */
-  #terminal-window {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(820px, 95vw);
-    height: min(580px, 88vh);
-    background: rgba(0, 8, 0, 0.96);
-    border: 1px solid #1a4a1a;
-    border-radius: 8px;
-    display: flex; flex-direction: column;
-    box-shadow: 0 0 60px rgba(51,255,51,0.08), 0 0 120px rgba(0,0,0,0.9);
-    pointer-events: all;
-    display: none;
-    font-family: 'Courier New', Courier, monospace;
-  }
-  #terminal-window.active { display: flex; }
+.hero-inner{position:relative;z-index:1;max-width:1100px}
 
-  /* Window titlebar */
-  #term-titlebar {
-    background: #0d1f0d;
-    border-bottom: 1px solid #1a3a1a;
-    padding: 8px 14px;
-    display: flex; align-items: center; gap: 8px;
-    border-radius: 8px 8px 0 0;
-    flex-shrink: 0;
-  }
-  .tb-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-  }
-  .tb-dot.r { background: #ff5f57; }
-  .tb-dot.y { background: #febc2e; }
-  .tb-dot.g { background: #28c840; }
-  #term-title {
-    margin-left: 8px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px; color: #4a8a4a;
-    letter-spacing: 0.1em;
-  }
-  #term-close {
-    margin-left: auto;
-    background: none; border: none;
-    color: #4a6a4a; cursor: pointer;
-    font-size: 14px; padding: 2px 6px;
-    border-radius: 3px;
-    transition: color 0.15s;
-  }
-  #term-close:hover { color: #33ff33; }
+/* Eyebrow */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:.62rem;color:var(--red);
+  letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.6rem;
+}
+.eyebrow-bar{width:28px;height:1px;background:var(--red);display:inline-block}
 
-  /* Terminal output area */
-  #term-output {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 18px 8px;
-    color: #33ff33;
-    font-size: 13px;
-    line-height: 1.55;
-    scroll-behavior: smooth;
-  }
-  #term-output::-webkit-scrollbar { width: 4px; }
-  #term-output::-webkit-scrollbar-track { background: transparent; }
-  #term-output::-webkit-scrollbar-thumb { background: #1a4a1a; border-radius: 2px; }
+/* Big headline */
+.hero-h1{
+  font-family:var(--serif);
+  font-size:clamp(3.5rem,10vw,8.5rem);
+  font-weight:400;line-height:.92;
+  letter-spacing:-.03em;margin-bottom:1.2rem;
+}
+.hero-h1 em{font-style:italic;color:transparent;
+  -webkit-text-stroke:1px rgba(240,240,242,.22)}
 
-  .line { display: block; white-space: pre-wrap; word-break: break-word; }
-  .line.dim { color: #1a5a1a; }
-  .line.bright { color: #66ff66; }
-  .line.red { color: #ff5555; }
-  .line.yellow { color: #ffff55; }
-  .line.cyan { color: #55ffff; }
-  .line.white { color: #cccccc; }
-  .line.title { color: #00ff88; font-weight: bold; }
-  .line.art { color: #22aa44; }
-  .line.link { color: #55bbff; }
-  .line.prompt-line { color: #33ff33; }
-  .line.em { color: #88ff88; }
+/* Tagline */
+.hero-tag{
+  font-family:var(--mono);font-size:clamp(.7rem,1.3vw,.82rem);
+  color:var(--t2);letter-spacing:.05em;margin-bottom:2.4rem;
+}
+.hero-tag span{color:var(--red)}
 
-  /* Input row */
-  #term-input-row {
-    display: flex; align-items: center;
-    padding: 8px 18px 14px;
-    border-top: 1px solid #0d2a0d;
-    flex-shrink: 0;
-  }
-  #term-prompt-label {
-    color: #33ff33; font-size: 13px;
-    font-family: 'Courier New', monospace;
-    white-space: nowrap; margin-right: 6px;
-  }
-  #term-input {
-    flex: 1; background: transparent;
-    border: none; outline: none;
-    color: #33ff33; font-size: 13px;
-    font-family: 'Courier New', monospace;
-    caret-color: #33ff33;
-  }
+/* Bio */
+.hero-bio{
+  max-width:520px;font-size:1rem;color:var(--t2);
+  line-height:1.78;margin-bottom:3rem;
+}
+.hero-bio strong{color:var(--text);font-weight:500}
 
-  /* HINT bubble */
-  #hint {
-    position: fixed;
-    bottom: 28px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,20,0,0.88);
-    border: 1px solid #1a4a1a;
-    color: #33aa33;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    padding: 8px 20px;
-    border-radius: 20px;
-    letter-spacing: 0.06em;
-    pointer-events: none;
-    z-index: 200;
-    display: none;
-    animation: fadeup 0.4s ease;
-  }
-  @keyframes fadeup { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-  #hint.active { display: block; }
+/* Cert pills */
+.cert-row{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:2.5rem}
+.cpill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--s1);border:1px solid var(--border2);
+  padding:5px 13px;border-radius:6px;font-family:var(--mono);
+  font-size:.62rem;color:var(--t2);text-decoration:none;
+  letter-spacing:.04em;transition:border-color .18s,color .18s,background .18s;
+}
+.cpill:hover{border-color:var(--red);color:var(--text);background:var(--red-dim)}
+.cd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cd.on{background:var(--green)}.cd.wip{background:var(--amber)}
+.cexp{color:var(--t3);font-size:.58rem}
 
-  /* Mobile tap area */
-  #tap-to-open {
-    position: fixed;
-    bottom: 30px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,20,0,0.85);
-    border: 1px solid #2a5a2a;
-    color: #33cc33;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    padding: 10px 24px;
-    border-radius: 20px;
-    cursor: pointer;
-    z-index: 300;
-    display: none;
-    letter-spacing: 0.08em;
-  }
+/* Buttons */
+.btnrow{display:flex;flex-wrap:wrap;gap:.75rem}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 24px;border-radius:8px;font-size:.82rem;font-weight:600;
+  text-decoration:none;cursor:pointer;border:1px solid transparent;
+  font-family:var(--sans);transition:all .2s;letter-spacing:.01em;
+}
+.btn-p{
+  background:var(--red);color:#fff;border-color:var(--red);
+  box-shadow:0 0 28px rgba(232,50,74,.3);
+}
+.btn-p:hover{background:#ff3452;box-shadow:0 0 44px rgba(232,50,74,.5);transform:translateY(-1px)}
+.btn-g{background:transparent;color:var(--t2);border-color:var(--border2)}
+.btn-g:hover{color:var(--text);border-color:var(--t3)}
 
-  @media (max-width: 768px) {
-    #terminal-window {
-      width: 98vw; height: 92vh;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: 6px;
-    }
-    #term-output { font-size: 12px; padding: 12px 12px 6px; }
-    #term-input-row { padding: 6px 12px 10px; }
-    #term-input { font-size: 12px; }
-    #term-prompt-label { font-size: 12px; }
-  }
+/* ── STATS BAR ── */
+.stats-bar{
+  display:flex;gap:0;
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin-top:4.5rem;
+}
+.stat{flex:1;padding:1.8rem 1.6rem;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-n{
+  font-family:var(--serif);font-size:2.4rem;font-weight:400;
+  line-height:1;letter-spacing:-.04em;color:var(--text);margin-bottom:5px;
+}
+.stat-n em{color:var(--red);font-style:normal}
+.stat-l{font-size:.75rem;color:var(--t2)}
+.stat-s{font-family:var(--mono);font-size:.6rem;color:var(--t3);margin-top:2px}
+
+/* ══════════════════════════════════════════
+   SECTION COMMON
+══════════════════════════════════════════ */
+.sec{padding:5rem clamp(1.2rem,5vw,5rem);border-top:1px solid var(--border)}
+.sec-ey{display:flex;align-items:center;gap:12px;margin-bottom:.8rem}
+.sec-num{font-family:var(--mono);font-size:.6rem;color:var(--red);letter-spacing:.12em}
+.sec-ln{flex:1;height:1px;background:var(--border)}
+.sec-h{
+  font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.8rem);
+  font-weight:400;letter-spacing:-.03em;margin-bottom:2.8rem;
+  line-height:1.05;
+}
+.sec-h em{font-style:italic;color:var(--red)}
+
+/* ══════════════════════════════════════════
+   EXPERIENCE
+══════════════════════════════════════════ */
+.exp-list{
+  display:flex;flex-direction:column;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+}
+.ecard{
+  background:var(--s1);padding:1.8rem 2rem;
+  position:relative;transition:background .2s;
+}
+.ecard::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:transparent;transition:background .2s;
+}
+.ecard:hover{background:var(--s2)}
+.ecard:hover::before{background:var(--red)}
+.etop{
+  display:flex;justify-content:space-between;
+  align-items:flex-start;flex-wrap:wrap;gap:.5rem;margin-bottom:4px;
+}
+.etitle{font-size:.95rem;font-weight:600;color:var(--text)}
+.edate{
+  font-family:var(--mono);font-size:.6rem;color:var(--t3);
+  border:1px solid var(--border2);padding:3px 8px;border-radius:4px;
+}
+.eorg{font-size:.78rem;color:var(--red);margin-bottom:9px}
+.ebullets{list-style:none}
+.ebullets li{
+  font-size:.82rem;color:var(--t2);
+  padding:2px 0 2px 16px;position:relative;line-height:1.55;
+}
+.ebullets li::before{content:'→';position:absolute;left:0;color:var(--t3);font-size:.68rem;top:5px}
+
+/* ══════════════════════════════════════════
+   BENTO GRID (skills / stats)
+══════════════════════════════════════════ */
+.bento{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+}
+.bcard{background:var(--s1);padding:1.8rem 2rem;transition:background .2s}
+.bcard:hover{background:var(--s2)}
+.bcard.col3{grid-column:span 3}
+.bcard.col4{grid-column:span 4}
+.bcard.col6{grid-column:span 6}
+.bcard.col8{grid-column:span 8}
+.bcard.col12{grid-column:span 12}
+.bcard-label{
+  font-family:var(--mono);font-size:.58rem;color:var(--t3);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:.8rem;
+}
+.bcard-val{
+  font-family:var(--serif);font-size:2.6rem;font-weight:400;
+  color:var(--text);line-height:1;letter-spacing:-.04em;margin-bottom:.3rem;
+}
+.bcard-val em{color:var(--red);font-style:normal}
+.bcard-sub{font-size:.78rem;color:var(--t2)}
+.bcard-title{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:.5rem}
+.tag-wrap{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.tag{
+  font-family:var(--mono);font-size:.6rem;padding:4px 10px;
+  border-radius:5px;background:var(--s2);border:1px solid var(--border);
+  color:var(--t2);letter-spacing:.03em;transition:all .2s;
+}
+.tag:hover{border-color:var(--red-glow);color:var(--text)}
+.tag.red{background:var(--red-dim);border-color:rgba(232,50,74,.2);color:rgba(232,50,74,.9)}
+
+/* Platform card inside bento */
+.platlink{
+  display:flex;flex-direction:column;gap:.9rem;
+  text-decoration:none;height:100%;position:relative;
+}
+.platlink::after{
+  content:'↗';position:absolute;top:0;right:0;
+  font-size:.9rem;color:var(--t3);transition:color .2s,transform .2s;
+}
+.platlink:hover::after{color:var(--t2);transform:translate(2px,-2px)}
+.plat-top{display:flex;align-items:center;gap:10px}
+.plat-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:var(--s2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.plat-icon svg{width:18px;height:18px}
+.plat-name{font-size:.88rem;font-weight:600;color:var(--text)}
+.plat-sub{font-family:var(--mono);font-size:.58rem;color:var(--t3);margin-top:1px}
+.plat-stat{
+  font-family:var(--mono);font-size:.68rem;color:var(--t2);
+  padding-top:.75rem;border-top:1px solid var(--border);margin-top:auto;
+}
+.plat-stat strong{color:var(--text);display:block;font-size:.8rem;margin-bottom:1px}
+
+/* ══════════════════════════════════════════
+   NOTES CARD
+══════════════════════════════════════════ */
+.notes-card{
+  background:var(--s1);border:1px solid var(--border);
+  border-left:3px solid var(--red);border-radius:14px;padding:2.6rem 2.8rem;
+  display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center;
+}
+.notes-title{
+  font-family:var(--serif);font-size:1.7rem;font-weight:400;
+  letter-spacing:-.02em;color:var(--text);margin-bottom:6px;
+}
+.notes-url{font-family:var(--mono);font-size:.68rem;color:var(--red);margin-bottom:.9rem}
+.notes-desc{font-size:.85rem;color:var(--t2);line-height:1.65;max-width:460px}
+.rtag{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;
+  padding:3px 8px;border-radius:4px;
+  background:var(--red-dim);border:1px solid rgba(232,50,74,.18);
+  color:rgba(232,50,74,.85);
+}
+
+/* ══════════════════════════════════════════
+   PROJECT
+══════════════════════════════════════════ */
+.proj{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:14px;padding:2rem 2.2rem;transition:border-color .2s;
+}
+.proj:hover{border-color:var(--border2)}
+.proj-head{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:1rem;flex-wrap:wrap;margin-bottom:.8rem;
+}
+.proj-title{font-size:.97rem;font-weight:600;color:var(--text)}
+.proj-badge{
+  font-family:var(--mono);font-size:.58rem;text-transform:uppercase;
+  letter-spacing:.07em;padding:3px 9px;border-radius:4px;
+  background:var(--s2);border:1px solid var(--border2);color:var(--t3);
+}
+.proj-desc{font-size:.85rem;color:var(--t2);line-height:1.65;margin-bottom:1rem}
+.proj-link{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:.63rem;color:var(--red);
+  text-decoration:none;letter-spacing:.06em;transition:opacity .15s;
+}
+.proj-link:hover{opacity:.72}
+
+/* ══════════════════════════════════════════
+   CONTACT
+══════════════════════════════════════════ */
+.contact-sec{
+  padding:6rem clamp(1.2rem,5vw,5rem) 5rem;
+  border-top:1px solid var(--border);
+  display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start;
+}
+.contact-left h2{
+  font-family:var(--serif);font-size:clamp(2.5rem,6vw,5rem);
+  font-weight:400;letter-spacing:-.04em;line-height:1.02;margin-bottom:1.2rem;
+}
+.contact-left h2 em{font-style:italic;color:var(--red)}
+.contact-sub{font-size:.9rem;color:var(--t2);margin-bottom:2rem;line-height:1.7}
+.contact-meta{list-style:none;display:flex;flex-direction:column;gap:.9rem;margin-bottom:2rem}
+.contact-meta li{display:flex;gap:.8rem;align-items:baseline}
+.contact-meta .label{
+  font-family:var(--mono);font-size:.6rem;color:var(--t3);
+  letter-spacing:.1em;text-transform:uppercase;width:55px;flex-shrink:0;
+}
+.contact-meta a,.contact-meta span{
+  font-size:.88rem;color:var(--t2);text-decoration:none;transition:color .15s;
+}
+.contact-meta a:hover{color:var(--text)}
+.contact-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.clink{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 16px;border:1px solid var(--border2);border-radius:8px;
+  font-size:.8rem;color:var(--t2);text-decoration:none;background:var(--s1);
+  transition:all .2s;
+}
+.clink:hover{border-color:var(--t3);color:var(--text);background:var(--s2)}
+.clink svg{width:14px;height:14px;flex-shrink:0;opacity:.65}
+.contact-right{
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;
+  padding:2.4rem;
+}
+.form-head{margin-bottom:1.6rem}
+.form-eyebrow{
+  font-family:var(--mono);font-size:.6rem;color:var(--red);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem;
+}
+.form-title{
+  font-family:var(--serif);font-size:1.5rem;font-weight:400;
+  color:var(--text);letter-spacing:-.02em;
+}
+.form-title em{font-style:italic}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.field{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem}
+.field label{font-size:.75rem;color:var(--t2);font-weight:500}
+.field input,.field textarea{
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:7px;padding:10px 14px;
+  font-family:var(--sans);font-size:.85rem;color:var(--text);
+  outline:none;transition:border-color .15s;width:100%;resize:vertical;
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--t3)}
+.field input:focus,.field textarea:focus{border-color:var(--red)}
+.form-submit{
+  width:100%;padding:13px;background:var(--red);color:#fff;
+  border:none;border-radius:8px;font-family:var(--sans);font-size:.88rem;
+  font-weight:600;cursor:pointer;letter-spacing:.01em;
+  transition:background .2s,box-shadow .2s;margin-top:.5rem;
+}
+.form-submit:hover{background:#ff3452;box-shadow:0 0 24px rgba(232,50,74,.4)}
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+footer{
+  border-top:1px solid var(--border);
+  padding:1.5rem clamp(1.2rem,5vw,5rem);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;
+}
+footer p{font-family:var(--mono);font-size:.6rem;color:var(--t3);letter-spacing:.06em}
+footer a{color:var(--t3);text-decoration:none;transition:color .15s}
+footer a:hover{color:var(--t2)}
+
+/* ══════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════ */
+.fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.fade-up.in{opacity:1;transform:none}
+
+/* Staggered word animation */
+.word{display:inline-block;opacity:0;transform:translateY(20px);animation:wordIn .6s forwards}
+@keyframes wordIn{to{opacity:1;transform:none}}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media(max-width:900px){
+  .contact-sec{grid-template-columns:1fr}
+  .bcard.col3,.bcard.col4{grid-column:span 6}
+  .bcard.col8{grid-column:span 12}
+  .stats-bar{flex-direction:column}
+  .stat{border-right:none;border-bottom:1px solid var(--border)}
+  .stat:last-child{border-bottom:none}
+}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero-h1{font-size:3.2rem}
+  .bcard.col3,.bcard.col4,.bcard.col6{grid-column:span 12}
+  .notes-card{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  footer{flex-direction:column;text-align:center}
+}
 </style>
 </head>
 <body>
 
-<div id="canvas-container"></div>
-<div id="vignette"></div>
-<div id="scanlines"></div>
+<div class="grain" aria-hidden="true"></div>
 
-<!-- BOOT SCREEN -->
-<div id="boot">
-  <div id="boot-text"></div>
+<!-- ── NAV ── -->
+<nav>
+  <a href="#" class="nav-logo">l1nux<b>kid</b></a>
+  <ul class="nav-links">
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#ctf">CTF</a></li>
+    <li><a href="#notes">Notes</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-pill"><span class="nav-pill-dot"></span>Open to Work</div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     HERO
+══════════════════════════════════════════ -->
+<section class="hero" id="top">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="hero-inner">
+
+    <div class="eyebrow fade-up">
+      <span class="eyebrow-bar"></span>
+      Offensive Security Professional
+    </div>
+
+    <h1 class="hero-h1">
+      <span class="word" style="animation-delay:.05s">Harsh</span>
+      <span class="word" style="animation-delay:.12s"> </span>
+      <span class="word" style="animation-delay:.18s"><em>Vala.</em></span>
+    </h1>
+
+    <p class="hero-tag fade-up" style="transition-delay:.2s">
+      <span>// OSCP+</span> &nbsp;·&nbsp; Pro Hacker · HTB &nbsp;·&nbsp; CTF #13 Global &nbsp;·&nbsp; Ahmedabad, India
+    </p>
+
+    <p class="hero-bio fade-up" style="transition-delay:.28s">
+      Offensive security professional with a B.Sc. in Cyber Security. I specialise in
+      <strong>web application exploitation</strong>, <strong>Active Directory attacks</strong>,
+      and network penetration testing. Active CTF competitor — every technique I learn
+      gets documented publicly.
+    </p>
+
+    <div class="cert-row fade-up" style="transition-delay:.34s">
+      <a href="https://credentials.offsec.com/0d0fb983-4975-41ad-8d5b-3a1a7450afc4#acc.spomlKzq" target="_blank" rel="noopener" class="cpill">
+        <span class="cd on"></span>OSCP+ · OffSec<span class="cexp">2026–2029 · verify ↗</span>
+      </a>
+      <a href="https://assets.tryhackme.com/certification-certificate/689d55a206bb7980aa46a373.pdf" target="_blank" rel="noopener" class="cpill">
+        <span class="cd on"></span>Jr Penetration Tester · PT1<span class="cexp">2025–2028 · view ↗</span>
+      </a>
+      <span class="cpill"><span class="cd wip"></span>CPTS · HackTheBox<span class="cexp">in progress</span></span>
+    </div>
+
+    <div class="btnrow fade-up" style="transition-delay:.4s">
+      <button class="btn btn-p" id="dlResume">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+        Download Resume
+      </button>
+      <a href="https://l1nuxkid.gitbook.io" target="_blank" rel="noopener" class="btn btn-g">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Public Notes
+      </a>
+      <a href="mailto:harshvala1414@gmail.com" class="btn btn-g">Get in touch →</a>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar fade-up" style="transition-delay:.48s">
+      <div class="stat">
+        <div class="stat-n">#<em>46</em></div>
+        <div class="stat-l">OffSec Gauntlet CTF</div>
+        <div class="stat-s">global · 3500+ participants</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n">#<em>13</em></div>
+        <div class="stat-l">TryHackMe CTF</div>
+        <div class="stat-s">global rank</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n"><em>100</em>+</div>
+        <div class="stat-l">HTB Machines Rooted</div>
+        <div class="stat-s">Pro Hacker rank</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n">0.<em>5</em>%</div>
+        <div class="stat-l">TryHackMe Platform</div>
+        <div class="stat-s">global top percentile</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     EXPERIENCE
+══════════════════════════════════════════ -->
+<section class="sec" id="experience">
+  <div class="sec-ey"><span class="sec-num">01</span><div class="sec-ln"></div></div>
+  <h2 class="sec-h fade-up">Experience &amp; <em>Education.</em></h2>
+
+  <div class="exp-list fade-up">
+    <div class="ecard">
+      <div class="etop">
+        <span class="etitle">Information Security Intern</span>
+        <span class="edate">Jan – Mar 2025</span>
+      </div>
+      <div class="eorg">ISEA · Information Security Education Awareness, Ahmedabad</div>
+      <ul class="ebullets">
+        <li>Vulnerability assessments on web applications and internal networks</li>
+        <li>Penetration testing — exploitation and validation in lab environments</li>
+        <li>Structured remediation reporting aligned with OWASP Top 10</li>
+        <li>Toolchain: Burp Suite · Nmap · Nessus</li>
+      </ul>
+    </div>
+    <div class="ecard">
+      <div class="etop">
+        <span class="etitle">Volunteer · Technical Operations</span>
+        <span class="edate">Feb 2024 – Present</span>
+      </div>
+      <div class="eorg">NULLCON International Security Conference, Goa</div>
+      <ul class="ebullets">
+        <li>On-site systems and access control for India's premier infosec conference</li>
+        <li>Direct engagement with security researchers and red team professionals</li>
+      </ul>
+    </div>
+    <div class="ecard">
+      <div class="etop">
+        <span class="etitle">B.Sc. Cyber Security &amp; Forensic Science</span>
+        <span class="edate">2023 – 2026</span>
+      </div>
+      <div class="eorg">Gujarat University, Ahmedabad · CGPA 7.50 / 10.0</div>
+      <ul class="ebullets">
+        <li>OSINT · Network Security · Digital Forensics · Cloud Computing · Blockchain · AI</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SKILLS + PLATFORMS BENTO
+══════════════════════════════════════════ -->
+<section class="sec" id="skills">
+  <div class="sec-ey"><span class="sec-num">02</span><div class="sec-ln"></div></div>
+  <h2 class="sec-h fade-up">Skills &amp; <em>Platforms.</em></h2>
+
+  <div class="bento fade-up">
+
+    <!-- Languages -->
+    <div class="bcard col4">
+      <div class="bcard-label">Languages</div>
+      <div class="tag-wrap">
+        <span class="tag">Python</span><span class="tag">Bash</span><span class="tag">SQL</span>
+      </div>
+    </div>
+
+    <!-- Tools -->
+    <div class="bcard col8">
+      <div class="bcard-label">Offensive Tooling</div>
+      <div class="tag-wrap">
+        <span class="tag">Burp Suite</span><span class="tag">Nmap</span>
+        <span class="tag">Nessus</span><span class="tag">Metasploit</span>
+        <span class="tag">BloodHound</span><span class="tag">Impacket</span>
+        <span class="tag">evil-winrm</span><span class="tag">Chisel</span>
+        <span class="tag">CrackMapExec</span><span class="tag">Responder</span>
+        <span class="tag">Kerbrute</span>
+      </div>
+    </div>
+
+    <!-- Domains -->
+    <div class="bcard col12">
+      <div class="bcard-label">Domains</div>
+      <div class="tag-wrap">
+        <span class="tag red">Active Directory Exploitation</span>
+        <span class="tag red">Web Application Security</span>
+        <span class="tag red">Privilege Escalation</span>
+        <span class="tag">Network Enumeration</span>
+        <span class="tag">AD CS Attacks</span>
+        <span class="tag">OSINT</span>
+        <span class="tag">Cloud Pentesting</span>
+        <span class="tag">Linux / Windows</span>
+      </div>
+    </div>
+
+    <!-- HackTheBox -->
+    <div class="bcard col3">
+      <a href="https://app.hackthebox.com/users/2149579" target="_blank" rel="noopener" class="platlink">
+        <div class="plat-top">
+          <div class="plat-icon" style="background:#0d1f00;border-color:#1e3a00">
+            <svg viewBox="0 0 32 32" fill="none">
+              <polygon points="16,3 29,10.5 29,21.5 16,29 3,21.5 3,10.5" stroke="#9fef00" stroke-width="1.6" fill="none"/>
+              <polygon points="16,9 24,13.5 24,18.5 16,23 8,18.5 8,13.5" stroke="#9fef00" stroke-width="1.1" fill="rgba(159,239,0,0.1)"/>
+              <line x1="16" y1="9" x2="8" y2="13.5" stroke="#9fef00" stroke-width="1"/>
+              <line x1="16" y1="9" x2="24" y2="13.5" stroke="#9fef00" stroke-width="1"/>
+              <line x1="8" y1="13.5" x2="8" y2="18.5" stroke="#9fef00" stroke-width="1"/>
+              <line x1="24" y1="13.5" x2="24" y2="18.5" stroke="#9fef00" stroke-width="1"/>
+              <line x1="8" y1="18.5" x2="16" y2="23" stroke="#9fef00" stroke-width="1"/>
+              <line x1="24" y1="18.5" x2="16" y2="23" stroke="#9fef00" stroke-width="1"/>
+            </svg>
+          </div>
+          <div>
+            <div class="plat-name">HackTheBox</div>
+            <div class="plat-sub">user/2149579</div>
+          </div>
+        </div>
+        <div class="plat-stat">
+          <strong>Pro Hacker</strong>100+ machines · Pro Labs
+        </div>
+      </a>
+    </div>
+
+    <!-- CTFtime -->
+    <div class="bcard col3">
+      <a href="https://ctftime.org/user/228035" target="_blank" rel="noopener" class="platlink">
+        <div class="plat-top">
+          <div class="plat-icon" style="background:#1a0800;border-color:#3a1800">
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="4" y="7" width="24" height="19" rx="3" stroke="#e05a2b" stroke-width="1.6"/>
+              <path d="M4 13h24" stroke="#e05a2b" stroke-width="1.2"/>
+              <path d="M11 7V4M21 7V4" stroke="#e05a2b" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M9 19h5M9 23h8" stroke="#e05a2b" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="plat-name">CTFtime</div>
+            <div class="plat-sub">user/228035</div>
+          </div>
+        </div>
+        <div class="plat-stat">
+          <strong>Active Competitor</strong>Web · Pwn · Forensics · Crypto
+        </div>
+      </a>
+    </div>
+
+    <!-- OffSec -->
+    <div class="bcard col3">
+      <a href="https://credentials.offsec.com/0d0fb983-4975-41ad-8d5b-3a1a7450afc4" target="_blank" rel="noopener" class="platlink">
+        <div class="plat-top">
+          <div class="plat-icon" style="background:#1a0005;border-color:#3a0010">
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="4" y="4" width="24" height="24" rx="3" stroke="#e8324a" stroke-width="1.6"/>
+              <polyline points="9,16 14,21 23,11" stroke="#e8324a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="plat-name">OffSec</div>
+            <div class="plat-sub">OSCP+ verified</div>
+          </div>
+        </div>
+        <div class="plat-stat">
+          <strong>OSCP+ Certified</strong>Apr 2026 – Apr 2029
+        </div>
+      </a>
+    </div>
+
+    <!-- TryHackMe -->
+    <div class="bcard col3">
+      <a href="https://tryhackme.com/p/l1nuxkid" target="_blank" rel="noopener" class="platlink">
+        <div class="plat-top">
+          <div class="plat-icon" style="background:#0a1a00;border-color:#1a3300">
+            <svg viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="11" stroke="#88cc14" stroke-width="1.6"/>
+              <circle cx="16" cy="16" r="5" stroke="#88cc14" stroke-width="1.1" opacity=".5"/>
+              <circle cx="16" cy="16" r="2.5" fill="#88cc14"/>
+            </svg>
+          </div>
+          <div>
+            <div class="plat-name">TryHackMe</div>
+            <div class="plat-sub">top 0.5% globally</div>
+          </div>
+        </div>
+        <div class="plat-stat">
+          <strong>PT1 Certified</strong>CTF global rank #13
+        </div>
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     CTF STATS
+══════════════════════════════════════════ -->
+<section class="sec" id="ctf">
+  <div class="sec-ey"><span class="sec-num">03</span><div class="sec-ln"></div></div>
+  <h2 class="sec-h fade-up">CTF &amp; <em>Rankings.</em></h2>
+
+  <div class="bento fade-up">
+    <div class="bcard col3">
+      <div class="bcard-label">OffSec Gauntlet CTF</div>
+      <div class="bcard-val">#<em>46</em></div>
+      <div class="bcard-sub">global out of 3,500+ participants</div>
+    </div>
+    <div class="bcard col3">
+      <div class="bcard-label">TryHackMe CTF</div>
+      <div class="bcard-val">#<em>13</em></div>
+      <div class="bcard-sub">global rank</div>
+    </div>
+    <div class="bcard col3">
+      <div class="bcard-label">HackTheBox</div>
+      <div class="bcard-val"><em>100</em>+</div>
+      <div class="bcard-sub">machines rooted · Pro Hacker rank</div>
+    </div>
+    <div class="bcard col3">
+      <div class="bcard-label">TryHackMe Platform</div>
+      <div class="bcard-val">0.<em>5</em>%</div>
+      <div class="bcard-sub">global top percentile</div>
+    </div>
+    <div class="bcard col8">
+      <div class="bcard-label">Competition History</div>
+      <div class="bcard-title" style="margin-top:.3rem">Active on CTFtime · web, pwn, forensics, crypto, misc</div>
+      <p style="font-size:.82rem;color:var(--t2);line-height:1.6;margin-top:.5rem">
+        Regular competitor in national and international CTFs. OffSec Gauntlet win (top 50 globally),
+        TryHackMe platform events, and ongoing training across all major categories.
+      </p>
+    </div>
+    <div class="bcard col4">
+      <div class="bcard-label">Certifications</div>
+      <div class="tag-wrap" style="margin-top:.5rem">
+        <span class="tag red">OSCP+</span>
+        <span class="tag red">PT1</span>
+        <span class="tag">CPTS · in progress</span>
+      </div>
+      <div style="margin-top:1.2rem;font-size:.75rem;color:var(--t3);font-family:var(--mono)">
+        HTB: app.hackthebox.com/users/2149579<br>
+        CTFtime: ctftime.org/user/228035
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     PROJECT
+══════════════════════════════════════════ -->
+<section class="sec">
+  <div class="sec-ey"><span class="sec-num">04</span><div class="sec-ln"></div></div>
+  <h2 class="sec-h fade-up">Projects.</h2>
+  <div class="proj fade-up">
+    <div class="proj-head">
+      <span class="proj-title">Kerberos Configuration Automator</span>
+      <span class="proj-badge">Python · Active Directory</span>
+    </div>
+    <p class="proj-desc">
+      Automates Kerberos configuration for Active Directory environments, enabling seamless workflow
+      with Impacket, BloodHound, and evil-winrm. Eliminates repetitive manual setup during AD
+      exploitation engagements — from ticket generation to tool authentication.
+    </p>
+    <a href="https://github.com/l1nuxkid" target="_blank" rel="noopener" class="proj-link">
+      github.com/l1nuxkid ↗
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     NOTES
+══════════════════════════════════════════ -->
+<section class="sec" id="notes">
+  <div class="sec-ey"><span class="sec-num">05</span><div class="sec-ln"></div></div>
+  <h2 class="sec-h fade-up">Knowledge <em>Base.</em></h2>
+  <div class="notes-card fade-up">
+    <div>
+      <div class="notes-title">Public Security Notes</div>
+      <div class="notes-url">l1nuxkid.gitbook.io</div>
+      <p class="notes-desc">
+        Methodologies, lab walkthroughs, attack techniques, and CTF writeups — documented as I go.
+        Everything I learn gets written up and shared publicly.
+      </p>
+      <div class="tag-wrap" style="margin-top:1rem">
+        <span class="rtag">Priv Esc · Linux/Win</span>
+        <span class="rtag">Active Directory</span>
+        <span class="rtag">AD CS Attacks</span>
+        <span class="rtag">Web Pentesting</span>
+        <span class="rtag">Cloud Security</span>
+        <span class="rtag">HTB Writeups</span>
+        <span class="rtag">CTF Writeups</span>
+      </div>
+    </div>
+    <a href="https://l1nuxkid.gitbook.io" target="_blank" rel="noopener" class="btn btn-p" style="white-space:nowrap;flex-shrink:0">Open Notes ↗</a>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     CONTACT
+══════════════════════════════════════════ -->
+<div class="contact-sec" id="contact">
+  <div class="contact-left fade-up">
+    <div class="sec-ey"><span class="sec-num">06</span><div class="sec-ln"></div></div>
+    <h2>Let's <em>work</em><br>together.</h2>
+    <p class="contact-sub">
+      Open to full-time roles, freelance pentests, and collaborations.
+      Direct line — no middlemen.
+    </p>
+    <ul class="contact-meta">
+      <li><span class="label">Email</span><a href="mailto:harshvala1414@gmail.com">harshvala1414@gmail.com</a></li>
+      <li><span class="label">Phone</span><a href="tel:+919313631414">+91 93136 31414</a></li>
+      <li><span class="label">City</span><span>Ahmedabad, India</span></li>
+    </ul>
+    <div class="contact-links">
+      <a href="https://www.linkedin.com/in/harshvala01" target="_blank" rel="noopener" class="clink">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <a href="https://github.com/l1nuxkid" target="_blank" rel="noopener" class="clink">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+      <a href="https://app.hackthebox.com/users/2149579" target="_blank" rel="noopener" class="clink">
+        <svg viewBox="0 0 24 24" fill="none" style="opacity:1">
+          <polygon points="12,2 22,7.5 22,16.5 12,22 2,16.5 2,7.5" stroke="#9fef00" stroke-width="1.4" fill="none"/>
+          <polygon points="12,7 18,10.5 18,13.5 12,17 6,13.5 6,10.5" stroke="#9fef00" stroke-width="1" fill="rgba(159,239,0,0.1)"/>
+        </svg>
+        HackTheBox
+      </a>
+      <a href="https://ctftime.org/user/228035" target="_blank" rel="noopener" class="clink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        CTFtime
+      </a>
+    </div>
+  </div>
+
+  <div class="contact-right fade-up" style="transition-delay:.15s">
+    <div class="form-head">
+      <div class="form-eyebrow">Direct message</div>
+      <div class="form-title">Send me a <em>quick message.</em></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>First name</label><input type="text" placeholder="Jane" autocomplete="given-name"></div>
+      <div class="field"><label>Last name</label><input type="text" placeholder="Smith" autocomplete="family-name"></div>
+    </div>
+    <div class="field"><label>Email</label><input type="email" placeholder="jane@company.com" autocomplete="email"></div>
+    <div class="field"><label>Message</label><textarea rows="4" placeholder="Hi Harsh, I'm looking for a penetration tester…"></textarea></div>
+    <button class="form-submit" onclick="handleFormSubmit(this)">Send message →</button>
+  </div>
 </div>
 
-<!-- FLOATING TERMINAL -->
-<div id="terminal-window">
-  <div id="term-titlebar">
-    <span class="tb-dot r"></span>
-    <span class="tb-dot y"></span>
-    <span class="tb-dot g"></span>
-    <span id="term-title">bash — l1nuxkid@terminal:~</span>
-    <button id="term-close" title="close">✕</button>
-  </div>
-  <div id="term-output"></div>
-  <div id="term-input-row">
-    <span id="term-prompt-label">l1nuxkid@terminal:~$</span>
-    <input type="text" id="term-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder=" type a command..." autofocus>
-  </div>
-</div>
-
-<div id="hint"></div>
-<button id="tap-to-open" onclick="openTerminal()">[ OPEN TERMINAL ]</button>
-
-<!-- THREE.JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<footer>
+  <p>© 2026 HARSH VALA · L1NUXKID.DEV</p>
+  <p><a href="https://l1nuxkid.gitbook.io">l1nuxkid.gitbook.io</a> &nbsp;·&nbsp; notes & writeups</p>
+</footer>
 
 <script>
-// ─────────────────────────────────────────────────────────────
-//  FILESYSTEM & TERMINAL DATA
-// ─────────────────────────────────────────────────────────────
-const FS = {
-  'about.txt': `
-╔══════════════════════════════════════╗
-║         HARSH VALA // l1nuxkid       ║
-╚══════════════════════════════════════╝
+/* ── SCROLL ANIMATIONS ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+}, {threshold:.12, rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-  Role    : Offensive Security Professional
-  Location: Ahmedabad, India
-  Status  : Open to Work ●
-
-  I specialise in web application exploitation,
-  Active Directory attacks, and network penetration
-  testing. I believe in learning by doing: break
-  things, understand them, document everything.
-
-  Every technique I learn gets written up at:
-  → l1nuxkid.gitbook.io
-`,
-
-  'certs.txt': `
-╔══════════════════════════════════════╗
-║           CERTIFICATIONS             ║
-╚══════════════════════════════════════╝
-
-  [✓] OSCP+  — OffSec
-      Offensive Security Certified Professional+
-      Valid: Apr 2026 – Apr 2029
-      Verify: credentials.offsec.com/0d0fb983...
-
-  [✓] PT1  — TryHackMe
-      Junior Penetration Tester
-      Valid: Aug 2025 – Aug 2028
-      View:  assets.tryhackme.com/...
-
-  [~] CPTS — HackTheBox
-      Certified Penetration Testing Specialist
-      Status: IN PROGRESS
-`,
-
-  'experience.txt': `
-╔══════════════════════════════════════╗
-║             EXPERIENCE               ║
-╚══════════════════════════════════════╝
-
-  ┌─ Information Security Intern ──────┐
-  │  ISEA, Ahmedabad                   │
-  │  Jan 2025 – Mar 2025               │
-  └────────────────────────────────────┘
-  → Vulnerability assessments on web apps
-    and internal networks
-  → Penetration testing, exploitation,
-    remediation reporting
-  → Toolchain: Burp Suite, Nmap, Nessus
-  → Aligned with OWASP Top 10
-
-  ┌─ Volunteer, Technical Operations ──┐
-  │  NULLCON International, Goa        │
-  │  Feb 2024 – Present                │
-  └────────────────────────────────────┘
-  → On-site technical support for India's
-    premier infosec conference
-  → Direct engagement with red team
-    professionals and researchers
-`,
-
-  'education.txt': `
-╔══════════════════════════════════════╗
-║             EDUCATION                ║
-╚══════════════════════════════════════╝
-
-  B.Sc. Cyber Security & Forensic Science
-  Gujarat University, Ahmedabad
-  2023 – 2026  |  CGPA: 7.50 / 10.0
-
-  Coursework:
-  → OSINT
-  → Network Security
-  → Digital Forensics
-  → Cloud Computing
-  → Blockchain Security
-  → Artificial Intelligence
-  → Database Management Systems
-`,
-
-  'skills.txt': `
-╔══════════════════════════════════════╗
-║           TECHNICAL SKILLS           ║
-╚══════════════════════════════════════╝
-
-  LANGUAGES
-  ─────────
-  Python  Bash  SQL
-
-  OFFENSIVE TOOLING
-  ─────────────────
-  Burp Suite   Nmap        Nessus
-  Metasploit   BloodHound  Impacket
-  evil-winrm   Chisel      CrackMapExec
-  Responder    Kerbrute    enum4linux
-
-  DOMAINS
-  ───────
-  Active Directory Exploitation
-  Web Application Security
-  Privilege Escalation (Linux/Win)
-  Network Enumeration
-  AD Certificate Services Attacks
-  OSINT & Reconnaissance
-  Cloud Pentesting
-`,
-
-  'ctf.txt': `
-╔══════════════════════════════════════╗
-║           CTF & RANKINGS             ║
-╚══════════════════════════════════════╝
-
-  OffSec Gauntlet CTF
-  ───────────────────
-  Rank: #46 globally
-  Pool: 3,500+ participants
-
-  TryHackMe CTF
-  ─────────────
-  Rank: #13 globally
-  Platform rank: Top 0.5% worldwide
-
-  HackTheBox
-  ──────────
-  Rank:     Pro Hacker
-  Machines: 100+ rooted
-  Pro Labs: Completed
-  Profile:  app.hackthebox.com/users/2149579
-
-  CTFtime
-  ───────
-  Profile:  ctftime.org/user/228035
-  Active in: Web, Pwn, Forensics,
-             Crypto, Misc
-`,
-
-  'projects.txt': `
-╔══════════════════════════════════════╗
-║              PROJECTS                ║
-╚══════════════════════════════════════╝
-
-  ┌─ Kerberos Config Automator ────────┐
-  │  Language: Python                  │
-  │  Domain:   Active Directory        │
-  └────────────────────────────────────┘
-
-  Automates Kerberos configuration for
-  Active Directory environments.
-
-  Enables seamless workflow with:
-  → Impacket
-  → BloodHound
-  → evil-winrm
-
-  Eliminates repetitive manual setup
-  during AD exploitation engagements.
-
-  Source: github.com/l1nuxkid
-`,
-
-  'contact.txt': `
-╔══════════════════════════════════════╗
-║              CONTACT                 ║
-╚══════════════════════════════════════╝
-
-  Email   : harshvala1414@gmail.com
-  Phone   : +91 93136 31414
-  LinkedIn: linkedin.com/in/harshvala01
-  GitHub  : github.com/l1nuxkid
-  HTB     : app.hackthebox.com/users/2149579
-  CTFtime : ctftime.org/user/228035
-  GitBook : l1nuxkid.gitbook.io
-  Website : l1nuxkid.dev
-`,
-
-  'notes.txt': `
-╔══════════════════════════════════════╗
-║           PUBLIC NOTES               ║
-╚══════════════════════════════════════╝
-
-  All research, writeups & methodology:
-  → l1nuxkid.gitbook.io
-
-  Topics covered:
-  ─────────────────────────────────────
-  Privilege Escalation  (Linux + Windows)
-  Active Directory attacks
-  AD Certificate Services (AD CS)
-  Web Application Pentesting
-  Cloud Security & Pentesting
-  HackTheBox machine writeups
-  CTF writeups & solutions
-  SSL/TLS deep dives
-  OSINT methodologies
-`,
-};
-
-const HELP_TEXT = `
-Available commands:
-
-  ls              list files
-  cat <file>      read a file
-  pwd             print working directory
-  whoami          current user
-  uname           system info
-  clear           clear terminal
-  help            show this help
-
-Files:
-  about.txt       who I am
-  certs.txt       certifications
-  experience.txt  work history
-  education.txt   academic background
-  skills.txt      technical skills
-  ctf.txt         CTF & platform rankings
-  projects.txt    projects & tools
-  contact.txt     contact info
-  notes.txt       public knowledge base
-
-Tip: type 'cat about.txt' to start
-`;
-
-const ASCII_BANNER = `
- _ _                   _    _    _ 
-| / |                 | |  (_)  | |
-| | | _ __  _   ___  _| | ___  | |
-|_| || '_ \\| | | \\ \\/ / |/ / | | |
- _  || | | | |_| |>  <|   <| |_|_|
-(_) ||_| |_|\\__,_/_/\\_\\_|\\_\\_(_(_)
-
-  l1nuxkid — offensive security
-  ──────────────────────────────
-  type 'help' to get started
-`;
-
-// ─────────────────────────────────────────────────────────────
-//  TERMINAL ENGINE
-// ─────────────────────────────────────────────────────────────
-const output = document.getElementById('term-output');
-const input  = document.getElementById('term-input');
-let history = [];
-let histIdx = -1;
-
-function write(text, cls = '') {
-  const lines = text.split('\n');
-  lines.forEach(l => {
-    const span = document.createElement('span');
-    span.className = 'line' + (cls ? ' ' + cls : '');
-    span.textContent = l;
-    output.appendChild(span);
-    output.appendChild(document.createTextNode('\n'));
-  });
-  output.scrollTop = output.scrollHeight;
-}
-
-function writePrompt(cmd) {
-  write('l1nuxkid@terminal:~$ ' + cmd, 'prompt-line');
-}
-
-function runCommand(raw) {
-  const cmd = raw.trim();
-  if (!cmd) return;
-  history.unshift(cmd);
-  histIdx = -1;
-  writePrompt(cmd);
-  const parts = cmd.split(/\s+/);
-  const base  = parts[0].toLowerCase();
-  const arg   = parts.slice(1).join(' ');
-
-  switch (base) {
-    case 'help':
-      write(HELP_TEXT, 'bright');
-      break;
-    case 'ls':
-      write('');
-      write('  drwxr-xr-x  .', 'dim');
-      write('  drwxr-xr-x  ..', 'dim');
-      Object.keys(FS).forEach(f => {
-        write('  -rw-r--r--  ' + f, 'cyan');
-      });
-      write('');
-      break;
-    case 'cat':
-      if (!arg) { write('  usage: cat <filename>', 'yellow'); break; }
-      if (FS[arg]) {
-        write(FS[arg], 'bright');
-      } else {
-        write('  cat: ' + arg + ': No such file or directory', 'red');
-        write('  Try: ls', 'dim');
-      }
-      break;
-    case 'pwd':
-      write('  /home/l1nuxkid', 'bright');
-      break;
-    case 'whoami':
-      write('  l1nuxkid', 'bright');
-      write('  Harsh Vala — Offensive Security Professional', 'dim');
-      break;
-    case 'uname':
-      write('  l1nuxkid-terminal 1.0.0 OSCP+ Pro-Hacker GNU/Linux', 'bright');
-      break;
-    case 'clear':
-      output.innerHTML = '';
-      write(ASCII_BANNER, 'art');
-      break;
-    case 'exit':
-    case 'quit':
-      closeTerminal();
-      break;
-    case 'open':
-    case 'xdg-open':
-      handleOpen(arg);
-      break;
-    default:
-      write('  ' + base + ': command not found', 'red');
-      write("  type 'help' for available commands", 'dim');
-  }
-  write('');
-}
-
-function handleOpen(url) {
-  const map = {
-    'github':   'https://github.com/l1nuxkid',
-    'linkedin': 'https://www.linkedin.com/in/harshvala01',
-    'htb':      'https://app.hackthebox.com/users/2149579',
-    'ctftime':  'https://ctftime.org/user/228035',
-    'notes':    'https://l1nuxkid.gitbook.io',
-    'mail':     'mailto:harshvala1414@gmail.com',
-  };
-  const target = map[url] || url;
-  write('  Opening: ' + target, 'cyan');
-  setTimeout(() => window.open(target, '_blank'), 400);
-}
-
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const val = input.value;
-    input.value = '';
-    runCommand(val);
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (histIdx < history.length - 1) { histIdx++; input.value = history[histIdx]; }
-  } else if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    if (histIdx > 0) { histIdx--; input.value = history[histIdx]; }
-    else { histIdx = -1; input.value = ''; }
-  } else if (e.key === 'Tab') {
-    e.preventDefault();
-    const val = input.value.trim();
-    if (val.startsWith('cat ')) {
-      const partial = val.slice(4);
-      const matches = Object.keys(FS).filter(f => f.startsWith(partial));
-      if (matches.length === 1) input.value = 'cat ' + matches[0];
-      else if (matches.length > 1) write('  ' + matches.join('  '), 'dim');
-    }
-  }
+/* ── RESUME DOWNLOAD ── */
+document.getElementById('dlResume').addEventListener('click', function(){
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Harsh Vala — Resume</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',system-ui,sans-serif;font-size:13px;line-height:1.55;color:#1a1917;background:#fff;padding:36px 44px;max-width:780px;margin:0 auto}
+h1{font-family:'Instrument Serif',serif;font-size:2.2rem;font-weight:400;letter-spacing:-.03em;color:#1a1917;margin-bottom:2px}
+h1 em{font-style:italic;color:#e8324a}
+.tl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.ct{font-size:.75rem;color:#444;margin-bottom:16px;line-height:1.9}
+.ct a{color:#e8324a;text-decoration:none}
+h2{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:#999;border-bottom:1px solid #eee;padding-bottom:3px;margin:16px 0 9px}
+.eh{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:2px}
+.et{font-weight:600;font-size:.85rem;color:#1a1917}
+.ed{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:#999}
+.eo{font-size:.75rem;color:#e8324a;margin-bottom:4px}.mb{margin-bottom:10px}
+ul{padding-left:12px;margin-top:3px}li{font-size:.78rem;color:#4a4845;margin-bottom:1px}
+.sk{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.s{border:1px solid #ddd;border-radius:3px;padding:2px 7px;font-size:.62rem;font-family:'JetBrains Mono',monospace;color:#555}
+.certs{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cert{border-left:2px solid #e8324a;padding:3px 8px;font-size:.76rem}
+.cert strong{display:block;color:#1a1917;font-weight:600}
+.cert small{color:#999;font-size:.62rem}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px}
+.st{font-size:.75rem;color:#555}.st strong{color:#e8324a;font-family:'JetBrains Mono',monospace}
+@media print{body{padding:20px 28px}}
+</style></head><body>
+<h1>Harsh <em>Vala</em></h1>
+<div class="tl">// l1nuxkid · Offensive Security Professional</div>
+<div class="ct">Ahmedabad, India &nbsp;·&nbsp; <a href="mailto:harshvala1414@gmail.com">harshvala1414@gmail.com</a> &nbsp;·&nbsp; +91 9313631414<br>
+<a href="https://l1nuxkid.dev">l1nuxkid.dev</a> &nbsp;·&nbsp; <a href="https://github.com/l1nuxkid">github.com/l1nuxkid</a> &nbsp;·&nbsp; <a href="https://linkedin.com/in/harshvala01">linkedin.com/in/harshvala01</a> &nbsp;·&nbsp; <a href="https://l1nuxkid.gitbook.io">l1nuxkid.gitbook.io</a></div>
+<h2>Summary</h2>
+<p style="font-size:.8rem;color:#4a4845;line-height:1.65">OSCP+ certified offensive security professional. Hands-on experience in web application exploitation, Active Directory attacks, and network penetration testing. Pro Hacker on HackTheBox (100+ machines). CTF winner — global rank #46 (OffSec Gauntlet / 3500+ participants), #13 (TryHackMe). Top 0.5% on TryHackMe globally.</p>
+<h2>Certifications</h2>
+<div class="certs">
+<div class="cert"><strong>OSCP+</strong>OffSec <small>Apr 2026 – Apr 2029</small></div>
+<div class="cert"><strong>Jr Penetration Tester (PT1)</strong>TryHackMe <small>Aug 2025 – Aug 2028</small></div>
+<div class="cert"><strong>CPTS</strong>HackTheBox <small>In progress</small></div>
+</div>
+<h2>Experience</h2>
+<div class="mb"><div class="eh"><span class="et">Information Security Intern</span><span class="ed">Jan – Mar 2025</span></div>
+<div class="eo">ISEA · Information Security Education Awareness, Ahmedabad</div>
+<ul><li>Vulnerability assessments on web applications and internal networks</li><li>Penetration testing, exploitation, and structured remediation reporting</li><li>Toolchain: Burp Suite, Nmap, Nessus · OWASP Top 10 aligned</li></ul></div>
+<div class="mb"><div class="eh"><span class="et">Volunteer · Technical Operations</span><span class="ed">Feb 2024 – Present</span></div>
+<div class="eo">NULLCON International Security Conference, Goa</div>
+<ul><li>On-site systems and access control for India's premier infosec conference</li><li>Direct engagement with security researchers and red team professionals</li></ul></div>
+<h2>Education</h2>
+<div class="mb"><div class="eh"><span class="et">B.Sc. Cyber Security &amp; Forensic Science</span><span class="ed">2023 – 2026</span></div>
+<div class="eo">Gujarat University, Ahmedabad · CGPA 7.50 / 10.0</div></div>
+<h2>Projects</h2>
+<div class="mb"><span class="et">Kerberos Configuration Automator</span>
+<ul style="margin-top:4px"><li>Python tool automating Kerberos setup for AD engagements — integrates Impacket, BloodHound, evil-winrm</li></ul></div>
+<h2>Technical Skills</h2>
+<div class="sk"><span class="s">Python</span><span class="s">Bash</span><span class="s">SQL</span><span class="s">Burp Suite</span><span class="s">Nmap</span><span class="s">Nessus</span><span class="s">Metasploit</span><span class="s">BloodHound</span><span class="s">Impacket</span><span class="s">evil-winrm</span><span class="s">Chisel</span><span class="s">CrackMapExec</span><span class="s">Active Directory</span><span class="s">Web App Security</span><span class="s">Privilege Escalation</span><span class="s">AD CS</span><span class="s">OSINT</span></div>
+<h2>CTF &amp; Rankings</h2>
+<div class="stats">
+<div class="st"><strong>#46</strong> OffSec Gauntlet (3500+)</div>
+<div class="st"><strong>#13</strong> TryHackMe CTF global</div>
+<div class="st"><strong>100+</strong> HTB machines · Pro Hacker</div>
+<div class="st"><strong>Top 0.5%</strong> TryHackMe</div>
+</div>
+<p style="font-size:.68rem;color:#999;margin-top:6px">HTB: app.hackthebox.com/users/2149579 · CTFtime: ctftime.org/user/228035</p>
+</body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='Harsh_Vala_Resume.html';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 });
 
-document.getElementById('term-close').addEventListener('click', closeTerminal);
-
-// ─────────────────────────────────────────────────────────────
-//  BOOT SEQUENCE
-// ─────────────────────────────────────────────────────────────
-const bootLines = [
-  { t: 'BIOS v2.26.0 — l1nuxkid Terminal', d: 80 },
-  { t: 'Checking RAM... 640K OK', d: 60 },
-  { t: 'Loading kernel modules...', d: 100 },
-  { t: '  [OK] offensive-sec.ko', d: 50 },
-  { t: '  [OK] ad-exploitation.ko', d: 50 },
-  { t: '  [OK] web-pwn.ko', d: 50 },
-  { t: '  [OK] ctf-engine.ko', d: 50 },
-  { t: '', d: 40 },
-  { t: 'Mounting filesystem... done', d: 80 },
-  { t: 'Starting services...', d: 60 },
-  { t: '  [OK] terminal daemon', d: 40 },
-  { t: '  [OK] scanline renderer', d: 40 },
-  { t: '  [OK] crt-shader v1.2', d: 40 },
-  { t: '', d: 60 },
-  { t: 'Welcome to l1nuxkid@terminal', d: 120 },
-  { t: 'Harsh Vala — Offensive Security', d: 80 },
-  { t: '', d: 200 },
-  { t: '[ PRESS ANY KEY TO CONTINUE ]', d: 0, cls: 'cursor' },
-];
-
-const bootEl = document.getElementById('boot-text');
-let bootDone = false;
-
-function renderBoot() {
-  let delay = 200;
-  bootLines.forEach((line, i) => {
-    setTimeout(() => {
-      const div = document.createElement('div');
-      div.textContent = line.t;
-      if (i === bootLines.length - 1) {
-        div.innerHTML = line.t + '<span id="boot-cursor"></span>';
-      }
-      bootEl.appendChild(div);
-      requestAnimationFrame(() => div.classList.add('show'));
-    }, delay);
-    delay += line.d + Math.random() * 30;
-  });
-  setTimeout(() => {
-    bootDone = true;
-    document.addEventListener('keydown', skipBoot, { once: true });
-    document.getElementById('boot').addEventListener('click', skipBoot, { once: true });
-  }, delay);
+/* ── FORM SUBMIT ── */
+function handleFormSubmit(btn){
+  const form = btn.closest('.contact-right');
+  const name = form.querySelector('input[type=text]').value.trim();
+  const email = form.querySelector('input[type=email]').value.trim();
+  const msg = form.querySelector('textarea').value.trim();
+  if(!name || !email || !msg){ alert('Please fill in all fields.'); return; }
+  window.location.href = `mailto:harshvala1414@gmail.com?subject=Message from ${encodeURIComponent(name)}&body=${encodeURIComponent(msg)}%0A%0AFrom: ${encodeURIComponent(email)}`;
 }
-
-function skipBoot() {
-  if (!bootDone) return;
-  const boot = document.getElementById('boot');
-  boot.style.transition = 'opacity 0.6s';
-  boot.style.opacity = '0';
-  setTimeout(() => {
-    boot.remove();
-    launchScene();
-  }, 600);
-}
-
-// ─────────────────────────────────────────────────────────────
-//  THREE.JS SCENE
-// ─────────────────────────────────────────────────────────────
-function launchScene() {
-  document.getElementById('vignette').classList.add('active');
-  document.getElementById('scanlines').classList.add('active');
-
-  const container = document.getElementById('canvas-container');
-  const W = window.innerWidth, H = window.innerHeight;
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.8;
-  container.appendChild(renderer.domElement);
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050705);
-  scene.fog = new THREE.FogExp2(0x050705, 0.04);
-
-  const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
-  camera.position.set(0, 0.5, 5.5);
-
-  // ── FLOOR ──
-  const floorGeo = new THREE.PlaneGeometry(30, 30);
-  const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x0a0f0a, roughness: 0.9, metalness: 0.1
-  });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -2;
-  floor.receiveShadow = true;
-  scene.add(floor);
-
-  // ── GRID ──
-  const grid = new THREE.GridHelper(20, 30, 0x0a2a0a, 0x061406);
-  grid.position.y = -2;
-  scene.add(grid);
-
-  // ─────────────────────────────────
-  //  RETRO COMPUTER MODEL
-  // ─────────────────────────────────
-  const monitorGroup = new THREE.Group();
-
-  // Monitor outer shell
-  const monShell = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 2.5, 1.4),
-    new THREE.MeshStandardMaterial({ color: 0xd4c9a8, roughness: 0.6, metalness: 0.05 })
-  );
-  monShell.castShadow = true;
-  monitorGroup.add(monShell);
-
-  // Monitor bevel top
-  const bevelTop = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 0.12, 1.4),
-    new THREE.MeshStandardMaterial({ color: 0xbcb298, roughness: 0.7 })
-  );
-  bevelTop.position.y = 1.31;
-  monitorGroup.add(bevelTop);
-
-  // Screen recess (dark inset)
-  const screenRecess = new THREE.Mesh(
-    new THREE.BoxGeometry(2.7, 1.95, 0.06),
-    new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 1 })
-  );
-  screenRecess.position.z = 0.71;
-  monitorGroup.add(screenRecess);
-
-  // Screen glow plane
-  const screenCanvas = document.createElement('canvas');
-  screenCanvas.width = 512; screenCanvas.height = 384;
-  const ctx = screenCanvas.getContext('2d');
-  drawScreenContent(ctx);
-  const screenTex = new THREE.CanvasTexture(screenCanvas);
-
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.6, 1.85),
-    new THREE.MeshBasicMaterial({ map: screenTex, color: 0xaaffaa })
-  );
-  screen.position.z = 0.745;
-  monitorGroup.add(screen);
-
-  // Screen tint overlay (reflection feel)
-  const screenOverlay = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.6, 1.85),
-    new THREE.MeshBasicMaterial({
-      color: 0x003300, transparent: true, opacity: 0.18
-    })
-  );
-  screenOverlay.position.z = 0.752;
-  monitorGroup.add(screenOverlay);
-
-  // Monitor stand neck
-  const neckGeo = new THREE.CylinderGeometry(0.14, 0.2, 0.7, 8);
-  const neckMat = new THREE.MeshStandardMaterial({ color: 0xbcb298, roughness: 0.65 });
-  const neck = new THREE.Mesh(neckGeo, neckMat);
-  neck.position.y = -1.6;
-  monitorGroup.add(neck);
-
-  // Monitor stand base
-  const baseGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.12, 12);
-  const base = new THREE.Mesh(baseGeo, neckMat);
-  base.position.y = -1.97;
-  base.castShadow = true;
-  monitorGroup.add(base);
-
-  // Ventilation slots on back/side
-  for (let i = 0; i < 5; i++) {
-    const slot = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.04, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x998866, roughness: 0.8 })
-    );
-    slot.position.set(1.62, 0.4 - i * 0.22, 0);
-    monitorGroup.add(slot);
-  }
-
-  // Power button
-  const pwrBtn = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16),
-    new THREE.MeshStandardMaterial({ color: 0x226622, emissive: 0x00aa00, emissiveIntensity: 1.2, roughness: 0.3 })
-  );
-  pwrBtn.rotation.x = Math.PI / 2;
-  pwrBtn.position.set(1.35, -0.85, 0.71);
-  monitorGroup.add(pwrBtn);
-
-  // Power LED glow
-  const pwrLight = new THREE.PointLight(0x00ff44, 0.4, 0.6);
-  pwrLight.position.set(1.35, -0.85, 0.85);
-  monitorGroup.add(pwrLight);
-
-  // Screen ambient glow
-  const screenLight = new THREE.PointLight(0x22ff44, 0.6, 3);
-  screenLight.position.set(0, 0.2, 1.5);
-  monitorGroup.add(screenLight);
-
-  monitorGroup.position.set(0, 0.3, 0);
-  scene.add(monitorGroup);
-
-  // ── KEYBOARD ──
-  const kbGroup = new THREE.Group();
-  const kbBase = new THREE.Mesh(
-    new THREE.BoxGeometry(3.2, 0.14, 1.0),
-    new THREE.MeshStandardMaterial({ color: 0xcec4a2, roughness: 0.65 })
-  );
-  kbBase.castShadow = true;
-  kbGroup.add(kbBase);
-
-  // Keyboard keys grid
-  const keyColors = [0xc8bc98, 0xd0c4a0, 0xc4b890];
-  for (let row = 0; row < 4; row++) {
-    const keysInRow = row === 0 ? 12 : row === 3 ? 8 : 11;
-    for (let col = 0; col < keysInRow; col++) {
-      const key = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.06, 0.18),
-        new THREE.MeshStandardMaterial({ color: keyColors[(row + col) % 3], roughness: 0.7 })
-      );
-      const totalW = keysInRow * 0.24;
-      key.position.set(
-        -totalW / 2 + col * 0.24 + 0.12,
-        0.1,
-        -0.32 + row * 0.22
-      );
-      kbGroup.add(key);
-    }
-  }
-
-  kbGroup.position.set(0, -1.93, 1.8);
-  kbGroup.rotation.x = -0.08;
-  scene.add(kbGroup);
-
-  // ── MOUSE ──
-  const mouseBody = new THREE.Mesh(
-    new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.1, 0.2, 6, 8)
-      : new THREE.CylinderGeometry(0.1, 0.12, 0.32, 12),
-    new THREE.MeshStandardMaterial({ color: 0xd4c8a8, roughness: 0.65 })
-  );
-  mouseBody.position.set(2.1, -1.9, 1.65);
-  mouseBody.rotation.x = Math.PI / 2;
-  scene.add(mouseBody);
-
-  // ── DESK ──
-  const desk = new THREE.Mesh(
-    new THREE.BoxGeometry(8, 0.12, 3.5),
-    new THREE.MeshStandardMaterial({ color: 0x3a2a18, roughness: 0.85, metalness: 0.02 })
-  );
-  desk.position.y = -2;
-  desk.receiveShadow = true;
-  scene.add(desk);
-
-  // Desk legs
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x2a1e10, roughness: 0.9 });
-  [[-3.4, 0.7], [3.4, 0.7], [-3.4, -0.7], [3.4, -0.7]].forEach(([x, z]) => {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.1), legMat);
-    leg.position.set(x, -2.8, z);
-    scene.add(leg);
-  });
-
-  // ── DECORATIVE FLOPPY DISKS ──
-  [-2.1, -1.7].forEach((x, i) => {
-    const floppy = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4, 0.03, 0.42),
-      new THREE.MeshStandardMaterial({ color: i === 0 ? 0x111166 : 0x661111, roughness: 0.7 })
-    );
-    floppy.position.set(x, -1.94, 1.4);
-    scene.add(floppy);
-  });
-
-  // ── COFFEE CUP ──
-  const cupGroup = new THREE.Group();
-  const cupBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14, 0.11, 0.3, 12),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 })
-  );
-  cupGroup.add(cupBody);
-  const cupLiquid = new THREE.Mesh(
-    new THREE.CircleGeometry(0.13, 12),
-    new THREE.MeshStandardMaterial({ color: 0x3a1a00, roughness: 1 })
-  );
-  cupLiquid.rotation.x = -Math.PI / 2;
-  cupLiquid.position.y = 0.14;
-  cupGroup.add(cupLiquid);
-  cupGroup.position.set(-2.2, -1.85, 0.8);
-  scene.add(cupGroup);
-
-  // ── LIGHTS ──
-  scene.add(new THREE.AmbientLight(0x112211, 0.8));
-
-  const keyLight = new THREE.SpotLight(0xffeedd, 0.6, 12, Math.PI / 4, 0.5);
-  keyLight.position.set(2, 4, 3);
-  keyLight.castShadow = true;
-  scene.add(keyLight);
-
-  const fillLight = new THREE.PointLight(0x112233, 0.3, 8);
-  fillLight.position.set(-3, 2, -2);
-  scene.add(fillLight);
-
-  const screenGlow = new THREE.PointLight(0x00ff44, 0.5, 4);
-  screenGlow.position.set(0, 0.5, 2.5);
-  scene.add(screenGlow);
-
-  // ── PARTICLES ──
-  const partGeo = new THREE.BufferGeometry();
-  const partCount = 300;
-  const pPos = new Float32Array(partCount * 3);
-  for (let i = 0; i < partCount * 3; i++) {
-    pPos[i] = (Math.random() - 0.5) * 20;
-  }
-  partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-  const partMat = new THREE.PointsMaterial({
-    color: 0x00ff44, size: 0.02, transparent: true, opacity: 0.35
-  });
-  scene.add(new THREE.Points(partGeo, partMat));
-
-  // ── CAMERA ANIMATION ──
-  let camTarget = { x: 0, y: 0.5, z: 5.5 };
-  let camPos    = { x: 0, y: 0.5, z: 5.5 };
-  let camFocus  = { x: 0, y: 0, z: 0 };
-  let phase = 0; // 0=idle orbit, 1=zoom to screen
-
-  // Mouse parallax
-  let mx = 0, my = 0;
-  document.addEventListener('mousemove', e => {
-    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-  });
-
-  // Click on screen = open terminal
-  renderer.domElement.addEventListener('click', e => {
-    const mouse = new THREE.Vector2(
-      (e.clientX / window.innerWidth) * 2 - 1,
-      -(e.clientY / window.innerHeight) * 2 + 1
-    );
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(mouse, camera);
-    const hits = ray.intersectObject(screen);
-    if (hits.length > 0) { openTerminal(); }
-  });
-
-  renderer.domElement.style.cursor = 'default';
-  renderer.domElement.addEventListener('mousemove', e => {
-    const mouse = new THREE.Vector2(
-      (e.clientX / window.innerWidth) * 2 - 1,
-      -(e.clientY / window.innerHeight) * 2 + 1
-    );
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(mouse, camera);
-    const hits = ray.intersectObject(screen);
-    renderer.domElement.style.cursor = hits.length > 0 ? 'pointer' : 'default';
-  });
-
-  // Show hint
-  const hint = document.getElementById('hint');
-  setTimeout(() => {
-    hint.textContent = '[ CLICK THE SCREEN TO OPEN TERMINAL ]';
-    hint.classList.add('active');
-    setTimeout(() => hint.classList.remove('active'), 4000);
-  }, 1200);
-
-  // Mobile button
-  if ('ontouchstart' in window) {
-    document.getElementById('tap-to-open').style.display = 'block';
-  }
-
-  // Animate screen content
-  let frame = 0;
-  function drawScreenContent(ctx) {
-    ctx.fillStyle = '#000800';
-    ctx.fillRect(0, 0, 512, 384);
-
-    // Scanlines on canvas texture
-    for (let y = 0; y < 384; y += 3) {
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(0, y, 512, 1);
-    }
-
-    ctx.font = 'bold 14px "Courier New"';
-    ctx.fillStyle = '#22cc44';
-
-    const lines = [
-      ' _  _',
-      '| || |__ _ _ _ ____ |_  \\  / __ _| |__ _',
-      '| __ / _` | \'_(_-< | /\\/\\/ / _` | / / _` |',
-      '|_||_\\__,_|_| /__/ |_|    \\__,_|_\\_\\__,_|',
-      '',
-      '  l1nuxkid@terminal:~$ _',
-      '',
-      '  OSCP+ | Pro Hacker | CTF #13',
-    ];
-
-    lines.forEach((line, i) => {
-      ctx.fillStyle = i < 4 ? '#229944' : i === 7 ? '#00ff88' : '#33cc44';
-      ctx.fillText(line, 12, 40 + i * 18);
-    });
-
-    // Blinking cursor sim
-    if (Math.floor(frame / 30) % 2 === 0) {
-      ctx.fillStyle = '#33ff33';
-      ctx.fillRect(200, 148, 8, 14);
-    }
-  }
-
-  // ── RENDER LOOP ──
-  const clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    frame++;
-    const t = clock.getElapsedTime();
-
-    // Idle camera orbit
-    if (phase === 0) {
-      camTarget.x = Math.sin(t * 0.18) * 0.7 + mx * 0.25;
-      camTarget.y = 0.5 + Math.sin(t * 0.12) * 0.15 + my * -0.15;
-      camTarget.z = 5.5 + Math.sin(t * 0.1) * 0.3;
-    }
-    camera.position.x += (camTarget.x - camera.position.x) * 0.03;
-    camera.position.y += (camTarget.y - camera.position.y) * 0.03;
-    camera.position.z += (camTarget.z - camera.position.z) * 0.03;
-    camera.lookAt(camFocus.x, camFocus.y + 0.3, camFocus.z);
-
-    // Monitor gentle bob
-    monitorGroup.position.y = 0.3 + Math.sin(t * 0.5) * 0.01;
-
-    // Screen flicker (subtle)
-    if (frame % 180 === 0) {
-      screenGlow.intensity = 0.3 + Math.random() * 0.4;
-    }
-
-    // Refresh screen canvas occasionally
-    if (frame % 45 === 0) {
-      drawScreenContent(ctx);
-      screenTex.needsUpdate = true;
-    }
-
-    // Particle drift
-    const pArr = partGeo.attributes.position.array;
-    for (let i = 1; i < pArr.length; i += 3) {
-      pArr[i] += 0.002;
-      if (pArr[i] > 5) pArr[i] = -5;
-    }
-    partGeo.attributes.position.needsUpdate = true;
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  window.addEventListener('resize', () => {
-    const W = window.innerWidth, H = window.innerHeight;
-    camera.aspect = W / H;
-    camera.updateProjectionMatrix();
-    renderer.setSize(W, H);
-  });
-}
-
-// ─────────────────────────────────────────────────────────────
-//  OPEN / CLOSE TERMINAL
-// ─────────────────────────────────────────────────────────────
-let terminalOpen = false;
-
-function openTerminal() {
-  if (terminalOpen) return;
-  terminalOpen = true;
-  const tw = document.getElementById('terminal-window');
-  tw.style.display = 'flex';
-  output.innerHTML = '';
-  write(ASCII_BANNER, 'art');
-  write("  Type 'help' to see commands.", 'dim');
-  write("  Try: cat about.txt", 'dim');
-  write('');
-  input.focus();
-}
-
-function closeTerminal() {
-  terminalOpen = false;
-  const tw = document.getElementById('terminal-window');
-  tw.style.display = 'none';
-}
-
-// Keyboard shortcut: ` or ~ to toggle terminal
-document.addEventListener('keydown', e => {
-  if (e.key === '`' || e.key === '~') {
-    if (terminalOpen) closeTerminal();
-    else openTerminal();
-  }
-  if (e.key === 'Escape' && terminalOpen) closeTerminal();
-});
-
-// ─────────────────────────────────────────────────────────────
-//  START BOOT
-// ─────────────────────────────────────────────────────────────
-window.addEventListener('load', renderBoot);
 </script>
 </body>
 </html>
